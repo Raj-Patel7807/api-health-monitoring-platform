@@ -64,7 +64,7 @@ A survey is still possible, but it should be **targeted** at people who have bui
 | Task walkthrough / observation | See the actual steps used to check and investigate an API                     | API developers and incident responders                                                                  |
 | Document analysis              | Find technical constraints and mandatory course requirements                  | Integration services, hosting provider, target API docs, course instructions, existing monitoring tools |
 | Targeted questionnaire         | Confirm common patterns with a slightly larger technical group                | Developers with API/backend/deployment experience                                                       |
-| Requirements workshop          | Combine findings, remove duplicates, discuss conflicts, and check feasibility | Project development team                                                                                |
+| Requirements workshop          | Combine findings, remove duplicates, discuss conflicts, and check feasibility | Project development team and database administrator                                                     |
 | Prototype review               | Validate dashboard layout and usability after a basic mock-up exists          | API developers and team leads                                                                           |
 
 Not every technique must be used with every stakeholder. We use the technique that best fits the information we need.
@@ -140,6 +140,7 @@ Do not record passwords, API keys, tokens, private URLs, or company-confidential
 | Incident Responder / On-call Developer    | Task walkthrough                                      | Interview, scenarios                                       | Their incident-response process is easier to understand by seeing the steps |
 | Team Lead / Project Maintainer            | Interview                                             | Prototype review                                           | Their main need is service-level summary and history                        |
 | Platform Administrator / Development Team | Requirements workshop                                 | Security analysis, document analysis                       | The team combines evidence and checks feasibility                           |
+| Database Administrator                    | Requirements workshop                                 | Document analysis, technical testing                       | They identify database reliability, security, backup, and retention needs   |
 | Notification / Integration Services       | Document analysis                                     | Integration test                                           | Their rules are defined in official API/webhook documentation               |
 | Monitored API Owners / Target Services    | Interview where possible, otherwise document analysis | Scenario analysis                                          | Their limits depend on the specific target service                          |
 | Course Instructor / Teaching Team         | Document analysis                                     | Clarification discussion                                   | Course requirements are already written in the project instructions         |
@@ -299,7 +300,7 @@ Avoid asking very technical questions that require detailed discussion, such as 
 
 ## 12. Requirements Workshop
 
-After the first interviews, observations, and document analysis, the nine-member team will hold one requirements workshop.
+After the first interviews, observations, and document analysis, the nine-member project team will hold one requirements workshop, including database-administration input where needed.
 
 ### Workshop Goals
 
@@ -385,6 +386,7 @@ Review:
 - course instructions,
 - notification-service documentation,
 - hosting documentation,
+- database documentation and operational constraints,
 - target API rules,
 - existing monitoring products.
 

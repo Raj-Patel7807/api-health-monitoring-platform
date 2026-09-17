@@ -35,6 +35,7 @@ We divide the stakeholders into four groups:
 | S7  | Monitored API Owners / Target Services            | External affected party  | Receives repeated monitoring requests from the platform                                 | Medium                  |
 | S8  | Hosting / Infrastructure Provider                 | External dependency      | Provides compute, database, storage, networking, and background-worker support          | Medium                  |
 | S9  | Course Instructor / Teaching Team                 | Process stakeholder      | Defines required software-engineering process and project deliverables                  | High for course process |
+| S10 | Database Administrator                            | Internal technical stakeholder | Manages database reliability, security, backups, performance, and data retention    | High                    |
 
 Priority means how strongly the stakeholder affects the product or the course process. It does **not** mean that lower-priority stakeholders are ignored.
 
@@ -275,6 +276,27 @@ Mainly through document analysis of the official project instructions. Direct cl
 
 ---
 
+### S10. Database Administrator
+
+**Who they are:**  
+A person responsible for administering the platform database. In a small project, this role may be performed by a member of the project development team.
+
+**Relationship with the platform:**  
+They ensure that monitoring data, incident history, user data, and configuration data are stored securely and remain available.
+
+**Important concerns to investigate:**
+
+- Database access control and protection of sensitive data.
+- Backup and recovery needs.
+- Data retention and database growth.
+- Database performance and availability.
+- Migration and schema-change practices.
+
+**How requirements will be collected:**  
+Through requirements workshops, document analysis, and technical testing where needed.
+
+---
+
 ## 5. Stakeholder Priority
 
 ### High Priority
@@ -283,6 +305,7 @@ Mainly through document analysis of the official project instructions. Direct cl
 - DevOps / Deployment-Experienced Developer
 - Incident Responder / On-call Developer
 - Platform Administrator / Project Development Team
+- Database Administrator
 
 These stakeholders directly affect the main monitoring and incident-management flow.
 
