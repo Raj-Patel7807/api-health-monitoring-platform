@@ -47,7 +47,7 @@ Acceptance criteria are intentionally written so that they can later be converte
 
 ## 3. User Story Index
 
-All **23 user stories** are included below in continuous numerical order.
+All **23 user stories** retain continuous numerical IDs.
 
 - **US-01 — User Account Onboarding**
 - **US-02 — Register an API Endpoint**
@@ -84,10 +84,10 @@ All **23 user stories** are included below in continuous numerical order.
 | E2 | API Monitoring & Health Checks | Scheduling, checking, failure detection and history | FR2, FR3, FR9, DR1, DR2, DR5 |
 | E3 | Incident Detection & Alerting | Incident threshold, state changes and notifications | FR5, FR6, FR7, FR8, FR13, NFR1, NFR3, NFR7 |
 | E4 | Dashboard, History & Reporting | Health overview, uptime, history and reports | FR4, FR9, FR10, FR14, NFR2, NFR4, NFR9 |
-| E5 | Responsible Monitoring & Maintenance | Rate limiting, backoff and maintenance windows | FR12, FR15, NFR11, DR3, DR4 |
+| E5 | Responsible Monitoring & Maintenance | Rate limiting, backoff and maintenance windows | FR12, FR15, NFR11, DR4 |
 | E6 | Security & Data Protection | Encryption, secure communication and security controls | NFR5, NFR6, DR2 |
 | E7 | Scalability, Cost & Operations | Scaling, deployment, maintenance and hosting constraints | NFR8, NFR10, NFR12 |
-| E8 | Platform Reliability & Operational Behaviour | Reliable monitoring and notification operation | NFR1, NFR3, NFR7, DR1, DR5 |
+| E8 | Platform Reliability & Operational Behaviour | Background monitoring, standard web communication, and temporary-failure handling | FR2, FR5, NFR5, DR1, DR2, DR5 |
 
 ---
 
@@ -137,7 +137,7 @@ All **23 user stories** are included below in continuous numerical order.
 **EPIC:** E1 — User Onboarding & API Registration  
 **Primary Actor:** API Developer / API Owner  
 **Priority:** High  
-**Source Requirements:** FR1
+**Source Requirements:** FR1, stakeholder security requirements
 
 ### User Story
 
@@ -148,7 +148,7 @@ All **23 user stories** are included below in continuous numerical order.
 **AC-02.1 — Endpoint URL**
 
 - Given that the user is adding an endpoint,
-- When the user enters a valid API URL,
+- When the user enters a valid and safe API URL,
 - Then the system shall accept the URL for registration.
 
 **AC-02.2 — Expected status code**
@@ -175,83 +175,10 @@ All **23 user stories** are included below in continuous numerical order.
 - When the user submits the registration,
 - Then the system shall reject the invalid configuration and inform the user that correction is required.
 
----
+**AC-02.6 — Safe endpoint URL validation**
 
-## US-03 — Configure Notification Details
-
-**EPIC:** E1 — User Onboarding & API Registration  
-**Primary Actor:** API Developer / API Owner  
-**Priority:** High  
-**Source Requirements:** FR13
-
-### User Story
-
-> **As an API owner, I want to configure and manage my notification details, so that incident alerts can be delivered through the notification channel I have selected.**
-
-### Acceptance Criteria
-
-**AC-03.1 — Notification configuration**
-
-- Given that the user has a registered account or endpoint,
-- When the user opens notification settings,
-- Then the system shall allow the user to configure supported notification details.
-
-**AC-03.2 — Supported details**
-
-- The configuration shall support the notification information required for the selected channel, such as a Slack webhook or email address.
-
-**AC-03.3 — Account or endpoint scope**
-
-- The user shall be able to associate notification details with their account or with an individual endpoint, as supported by the platform configuration.
-
-**AC-03.4 — Update configuration**
-
-- Given that notification details already exist,
-- When the user changes them,
-- Then the system shall save the updated configuration for future notifications.
-
-**AC-03.5 — Secure handling**
-
-- Sensitive notification information such as webhook URLs or tokens shall not be unnecessarily exposed in the user interface or logs.
-
----
-
-## US-04 — Configure an Endpoint Maintenance Window
-
-**EPIC:** E1 — User Onboarding & API Registration  
-**Primary Actor:** API Developer / API Owner  
-**Priority:** Medium  
-**Source Requirements:** FR15, DR4
-
-### User Story
-
-> **As an API owner, I want to define a maintenance window for an endpoint, so that planned deployments or maintenance do not create false incidents or unnecessary alerts.**
-
-### Acceptance Criteria
-
-**AC-04.1 — Create maintenance window**
-
-- Given that an endpoint is registered,
-- When the user defines a valid planned time range,
-- Then the system shall save the maintenance window for that endpoint.
-
-**AC-04.2 — Monitoring continues**
-
-- Given that a maintenance window is active,
-- When the scheduled health-check time is reached,
-- Then the system shall continue performing the health check.
-
-**AC-04.3 — Suppress incident/alert**
-
-- Given that a monitored endpoint fails during an active maintenance window,
-- When the failure is processed,
-- Then the system shall not create a normal incident or send a normal incident alert for that planned maintenance period.
-
-**AC-04.4 — End of maintenance**
-
-- Given that the maintenance window has ended,
-- When subsequent health checks fail,
-- Then normal failure and incident processing shall resume.
+- Before an endpoint is saved or monitored, the system shall validate the user-provided monitoring URL and its resolved target address.
+- The system shall reject or safely prevent monitoring of loopback, private/internal, link-local, and other unsafe addresses according to the project's security requirements.
 
 ---
 
@@ -378,15 +305,55 @@ All **23 user stories** are included below in continuous numerical order.
 
 **AC-07.5 — Older data**
 
-- Older/archived data shall remain reachable even if retrieval takes longer, with the stated target of up to **5 minutes**.
+- Older data retained in archive shall remain reachable even if retrieval takes longer, with the stated target of up to **5 minutes**.
 
-**AC-07.6 — No monitoring-data deletion**
+**AC-07.6 — Monitoring-data retention**
 
-- Monitoring data shall not be intentionally deleted as part of normal system operation.
+- Recent monitoring data shall be retained directly for operational use.
+- Older monitoring data may be archived, aggregated, or removed according to the finalized data-retention policy and hosting/storage limits, while retaining the information needed for historical uptime and reporting.
 
 ---
 
 # E3 — Incident Detection & Alerting
+
+## US-03 — Configure Notification Details
+
+**EPIC:** E3 — Incident Detection & Alerting  
+**Primary Actor:** API Developer / API Owner  
+**Priority:** High  
+**Source Requirements:** FR13
+
+### User Story
+
+> **As an API owner, I want to configure and manage my notification details, so that incident alerts can be delivered through the notification channel I have selected.**
+
+### Acceptance Criteria
+
+**AC-03.1 — Notification configuration**
+
+- Given that the user has a registered account or endpoint,
+- When the user opens notification settings,
+- Then the system shall allow the user to configure supported notification details.
+
+**AC-03.2 — Supported details**
+
+- The configuration shall support the notification information required for the selected channel, such as a Slack webhook or email address.
+
+**AC-03.3 — Account or endpoint scope**
+
+- The user shall be able to associate notification details with their account or with an individual endpoint, as supported by the platform configuration.
+
+**AC-03.4 — Update configuration**
+
+- Given that notification details already exist,
+- When the user changes them,
+- Then the system shall save the updated configuration for future notifications.
+
+**AC-03.5 — Secure handling**
+
+- Sensitive notification information such as webhook URLs or tokens shall not be unnecessarily exposed in the user interface or logs.
+
+---
 
 ## US-08 — Create an Incident Only After Confirmed Failure
 
@@ -553,7 +520,7 @@ All **23 user stories** are included below in continuous numerical order.
 **EPIC:** E3 — Incident Detection & Alerting  
 **Primary Actor:** Incident Responder / On-call Developer  
 **Priority:** High  
-**Source Requirements:** FR5, FR6, FR9, DR5
+**Source Requirements:** FR5, FR6, FR7, FR9, DR5
 
 ### User Story
 
@@ -573,9 +540,21 @@ All **23 user stories** are included below in continuous numerical order.
 **AC-12.3 — Recovery detection**
 
 - Given that an endpoint with an open incident returns to its expected healthy state,
-- Then the system shall update the endpoint's state to healthy/recovered.
+- Then the system shall record the recovery, close the incident, and update the endpoint's state to healthy/recovered.
 
-**AC-12.4 — Historical state**
+**AC-12.4 — Recovery notification**
+
+- Given that recovery has been recorded for an open incident,
+- When a notification channel is configured for the endpoint or account,
+- Then the system shall send one recovery notification through that configured channel.
+
+**AC-12.5 — No duplicate recovery notification**
+
+- Given that an incident has already been recorded as recovered,
+- When subsequent health checks remain healthy,
+- Then the system shall not send another recovery notification for that incident.
+
+**AC-12.6 — Historical state**
 
 - Previous incident information shall remain available as historical data.
 
@@ -697,10 +676,49 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 
 # E5 — Responsible Monitoring & Maintenance
 
+## US-04 — Configure an Endpoint Maintenance Window
+
+**EPIC:** E5 — Responsible Monitoring & Maintenance  
+**Primary Actor:** API Developer / API Owner  
+**Priority:** Medium  
+**Source Requirements:** FR15
+
+### User Story
+
+> **As an API owner, I want to define a maintenance window for an endpoint, so that planned deployments or maintenance do not create false incidents or unnecessary alerts.**
+
+### Acceptance Criteria
+
+**AC-04.1 — Create maintenance window**
+
+- Given that an endpoint is registered,
+- When the user defines a valid planned time range,
+- Then the system shall save the maintenance window for that endpoint.
+
+**AC-04.2 — Monitoring continues**
+
+- Given that a maintenance window is active,
+- When the scheduled health-check time is reached,
+- Then the system shall continue performing the health check.
+
+**AC-04.3 — Suppress incident/alert**
+
+- Given that a monitored endpoint fails during an active maintenance window,
+- When the failure is processed,
+- Then the system shall not create a normal incident or send a normal incident alert for that planned maintenance period.
+
+**AC-04.4 — End of maintenance**
+
+- Given that the maintenance window has ended,
+- When subsequent health checks fail,
+- Then normal failure and incident processing shall resume.
+
+---
+
 ## US-16 — Respect Target API Rate Limits and Use Backoff
 
 **EPIC:** E5 — Responsible Monitoring & Maintenance  
-**Primary Actor:** Monitored API Owner / Target Service  
+**Primary Actor:** Monitored API Owners / Target Services  
 **Priority:** High  
 **Source Requirements:** FR12, NFR11, DR4
 
@@ -738,13 +756,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-17 — Protect Stored Monitoring and Configuration Data
 
 **EPIC:** E6 — Security & Data Protection  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** High  
 **Source Requirements:** NFR5, NFR6
 
 ### User Story
 
-> **As a platform administrator, I want stored monitoring and configuration data to be encrypted and protected, so that sensitive information is not exposed if stored data is accessed improperly.**
+> **As a member of the project development team, I want stored monitoring and configuration data to be encrypted and protected, so that sensitive information is not exposed if stored data is accessed improperly.**
 
 ### Acceptance Criteria
 
@@ -773,13 +791,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-18 — Securely Manage Access to the Platform
 
 **EPIC:** E6 — Security & Data Protection  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** High  
 **Source Requirements:** NFR5, NFR6, stakeholder security requirements
 
 ### User Story
 
-> **As a platform administrator, I want access to platform resources and sensitive configuration to be protected, so that users cannot access data or functions they are not authorized to use.**
+> **As a member of the project development team, I want access to platform resources and sensitive configuration to be protected, so that users cannot access data or functions they are not authorized to use.**
 
 ### Acceptance Criteria
 
@@ -806,13 +824,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-19 — Scale Monitoring Resources as Usage Grows
 
 **EPIC:** E7 — Scalability, Cost & Operations  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** Medium  
 **Source Requirements:** NFR8, NFR10
 
 ### User Story
 
-> **As a platform administrator, I want the monitoring system to scale its resources as the number of users and health checks grows, so that the platform can continue operating without unnecessary cost or performance degradation.**
+> **As a member of the project development team, I want the monitoring system to scale its resources as the number of users and health checks grows, so that the platform can continue operating without unnecessary cost or performance degradation.**
 
 ### Acceptance Criteria
 
@@ -842,13 +860,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-20 — Deploy and Maintain the Platform Within Hosting Constraints
 
 **EPIC:** E7 — Scalability, Cost & Operations  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** Medium  
 **Source Requirements:** NFR12, NFR8, S8 stakeholder constraints
 
 ### User Story
 
-> **As a platform administrator, I want the application to be deployable and maintainable within the selected hosting environment, so that the monitoring platform can run reliably without exceeding infrastructure limitations.**
+> **As a member of the project development team, I want the application to be deployable and maintainable within the selected hosting environment, so that the monitoring platform can run reliably without exceeding infrastructure limitations.**
 
 ### Acceptance Criteria
 
@@ -880,13 +898,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-21 — Keep Monitoring Workloads Separate From the User Interface
 
 **EPIC:** E8 — Platform Reliability & Operational Behaviour  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** High  
 **Source Requirements:** DR1, FR2
 
 ### User Story
 
-> **As a platform administrator, I want health checks to execute through background workers rather than the main user-facing request flow, so that monitoring activity does not make the dashboard or application slow or unresponsive.**
+> **As a member of the project development team, I want health checks to execute through background workers rather than the main user-facing request flow, so that monitoring activity does not make the dashboard or application slow or unresponsive.**
 
 ### Acceptance Criteria
 
@@ -911,13 +929,13 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-22 — Follow Standard Web Communication Rules
 
 **EPIC:** E8 — Platform Reliability & Operational Behaviour  
-**Primary Actor:** Platform Administrator / Project Development Team  
+**Primary Actor:** Project Development Team  
 **Priority:** High  
 **Source Requirements:** DR2, NFR5
 
 ### User Story
 
-> **As a platform administrator, I want communication between the monitoring platform and monitored endpoints to follow standard HTTP/HTTPS and TLS requirements, so that monitoring communication remains compatible and secure.**
+> **As a member of the project development team, I want communication between the monitoring platform and monitored endpoints to follow standard HTTP/HTTPS and TLS requirements, so that monitoring communication remains compatible and secure.**
 
 ### Acceptance Criteria
 
@@ -940,7 +958,7 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 **EPIC:** E8 — Platform Reliability & Operational Behaviour  
 **Primary Actor:** Incident Responder / On-call Developer  
 **Priority:** High  
-**Source Requirements:** DR5, FR5, FR6
+**Source Requirements:** DR5, FR5
 
 ### User Story
 
@@ -972,10 +990,10 @@ The following criteria provide direct traceability for NFRs that apply across mu
 
 | NFR | Acceptance / Validation Target | Covered By |
 |---|---|---|
-| NFR1 | Failure detected within 2 minutes for at least 95/100 incidents over the stated 30-day measurement period | US-08, US-23 |
+| NFR1 | Failure detected within 2 minutes for at least 95/100 incidents over the stated 30-day measurement period | US-08 |
 | NFR2 | Recent-data lookup under 5 seconds; older archived lookup may take up to 5 minutes | US-07, US-14 |
 | NFR3 | At least 99/100 notification deliveries succeed and are acknowledged within 5 seconds | US-10, US-11 |
-| NFR4 | Monitoring data is retained; recent data remains fast and older data remains reachable | US-07, US-14 |
+| NFR4 | Recent monitoring data is retained directly; older data is archived, aggregated, or removed according to the finalized retention policy and hosting limits, while retained historical data remains reachable | US-07, US-14 |
 | NFR5 | Stored data uses AES-256 and network traffic uses TLS 1.3 | US-17, US-22 |
 | NFR6 | Zero critical/high security incidents over the stated 12-month target period and required compliance checks pass | US-17, US-18 |
 | NFR7 | At least 90/100 alerts are real/actionable and average resolution target is under 30 minutes | US-09, US-12 |
@@ -994,7 +1012,7 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | DR1 | Health checks run in the background and do not block the user-facing application | US-05, US-21 |
 | DR2 | Communication follows HTTP/HTTPS rules and TLS 1.3 is used for network transmission | US-06, US-17, US-22 |
 | DR3 | Uptime uses `(Total Time - Downtime) / Total Time × 100` | US-14 |
-| DR4 | Monitoring another service must use reasonable intervals/backoff to avoid abusive traffic | US-04, US-16 |
+| DR4 | Monitoring another service must use reasonable intervals/backoff to avoid abusive traffic | US-16 |
 | DR5 | A single temporary failure must not automatically become a real incident | US-08, US-23 |
 
 ---
@@ -1008,8 +1026,8 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | FR3 | Detect timeout, wrong status, connection and SSL failures | US-06 |
 | FR4 | Calculate uptime and expose it through reporting API | US-14 |
 | FR5 | Create incident only after failure threshold is crossed | US-08, US-23 |
-| FR6 | One alert per state change instead of one per failed check | US-09 |
-| FR7 | Send alerts through Slack, Discord, Email or webhook | US-10 |
+| FR6 | One alert per state change instead of one per failed check | US-09, US-12 |
+| FR7 | Send alerts through Slack, Discord, Email or webhook | US-10, US-12 |
 | FR8 | Retry failed notification up to 3 times with growing wait time | US-11 |
 | FR9 | Store uptime and response-time history | US-07, US-14 |
 | FR10 | Dashboard showing endpoint health and open incidents | US-13 |
@@ -1029,11 +1047,12 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | S2 — DevOps / Deployment-Experienced Developer | US-05, US-06, US-08, US-19, US-20, US-21 |
 | S3 — Incident Responder / On-call Developer | US-08, US-09, US-10, US-11, US-12, US-23 |
 | S4 — Team Lead / Project Maintainer | US-13, US-14, US-15 |
-| S5a — Platform Administrator | US-17, US-18, US-19, US-20, US-21, US-22 |
-| S5b — Project Development Team | US-05, US-17, US-18, US-19, US-20, US-21, US-22 |
-| S6 — Notification & Integration Services | US-03, US-10, US-11 |
-| S7 — Target Service Operators / Monitored APIs | US-04, US-16 |
+| S5 — Platform Administrator / Project Development Team | US-02, US-05, US-17, US-18, US-19, US-20, US-21, US-22 |
+| S6 — Notification and Integration Services | US-03, US-10, US-11, US-12 |
+| S7 — Monitored API Owners / Target Services | US-04, US-16 |
 | S8 — Hosting / Infrastructure Provider | US-05, US-19, US-20 |
+| S9 — Course Instructor / Teaching Team | No direct product user stories; governs course/process deliverables. |
+| S10 — Database Administrator | US-07, US-14, US-17, US-20 |
 
 ---
 
@@ -1046,8 +1065,8 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | FR3 | US-06 |
 | FR4 | US-14 |
 | FR5 | US-08, US-23 |
-| FR6 | US-09 |
-| FR7 | US-10 |
+| FR6 | US-09, US-12 |
+| FR7 | US-10, US-12 |
 | FR8 | US-11 |
 | FR9 | US-07, US-14 |
 | FR10 | US-13 |
@@ -1056,7 +1075,7 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | FR13 | US-03 |
 | FR14 | US-15 |
 | FR15 | US-04 |
-| NFR1 | US-08, US-23 |
+| NFR1 | US-08 |
 | NFR2 | US-07, US-14 |
 | NFR3 | US-10, US-11 |
 | NFR4 | US-07, US-14 |
@@ -1071,7 +1090,7 @@ The following criteria provide direct traceability for NFRs that apply across mu
 | DR1 | US-05, US-21 |
 | DR2 | US-06, US-17, US-22 |
 | DR3 | US-14 |
-| DR4 | US-04, US-16 |
+| DR4 | US-16 |
 | DR5 | US-08, US-23 |
 
 ---
