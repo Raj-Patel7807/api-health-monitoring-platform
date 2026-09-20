@@ -904,7 +904,7 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-21 — Deploy and Maintain the Platform Within Hosting Constraints
 
 **EPIC:** E6 — Access Control & Advanced Monitoring  
-**Primary Actor:** Platform Administrator / DevOps Developer  
+**Primary Actor:** Platform Administrator / Project Development Team; DevOps / Deployment-Experienced Developer  
 **Priority:** Medium  
 **Source Requirements:** NFR12
 
@@ -992,7 +992,7 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-23 — Automatically Fail Over Monitoring Workers
 
 **EPIC:** E7 — Scalability, Reliability & Data Management  
-**Primary Actor:** Platform Administrator / DevOps Developer  
+**Primary Actor:** Platform Administrator / Project Development Team; DevOps / Deployment-Experienced Developer  
 **Priority:** High  
 **Source Requirements:** NFR13, DR1
 
@@ -1035,7 +1035,7 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 ## US-24 — Preserve Long-Term Monitoring Data Through Data Rollups
 
 **EPIC:** E7 — Scalability, Reliability & Data Management  
-**Primary Actor:** API Developer / Database/Data Operations  
+**Primary Actor:** API Developer / API Owner; Database Administrator  
 **Priority:** Medium  
 **Source Requirements:** NFR4, NFR14
 
@@ -1264,12 +1264,12 @@ The following table shows where the NFRs are represented in the user stories and
 | DevOps / Deployment-Experienced Developer | US-05, US-06, US-16, US-21, US-22, US-23, US-24 |
 | Incident Responder / On-call Developer | US-09, US-10, US-11, US-12, US-13 |
 | Team Lead / Project Maintainer | US-13, US-14, US-15, US-18, US-25 |
-| Platform Administrator / Project Development Team | US-05, US-17, US-18, US-19, US-21, US-22, US-23, US-24 |
-| Notification & Integration Services | US-03, US-11, US-12 |
+| Platform Administrator / Project Development Team | US-05, US-17, US-18, US-19, US-21, US-22, US-23, US-24, US-25 |
+| Notification and Integration Services | US-03, US-11, US-12 |
 | Monitored API Owners / Target Services | US-04, US-06, US-16, US-20 |
 | Hosting / Infrastructure Provider | US-21, US-22, US-23, US-24 |
-| Database / Data Operations | US-08, US-14, US-15, US-18, US-24 |
-| Project Team Members | US-25 |
+| Course Instructor / Teaching Team | US-25 |
+| Database Administrator | US-08, US-14, US-15, US-18, US-24 |
 
 ---
 
