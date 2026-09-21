@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
 jobs:
-  check:
+  backend-ci:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
     steps:
