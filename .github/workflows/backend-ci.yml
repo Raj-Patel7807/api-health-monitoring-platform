@@ -1,0 +1,20 @@
+name: Backend CI
+on:
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { python-version: "3.12", enable-cache: true }
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy app
+      - run: uv run pytest --cov=app --cov-report=term-missing

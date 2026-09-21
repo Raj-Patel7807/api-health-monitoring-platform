@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project documentation
+    url: ../../docs
+    about: Read requirements and engineering guidance before opening work.

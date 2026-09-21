@@ -1,0 +1,17 @@
+name: Feature request
+description: Propose approved product work.
+title: "feat: "
+labels: [feature]
+body:
+  - type: input
+    id: story
+    attributes: { label: Related user story ID, placeholder: US-02 }
+    validations: { required: true }
+  - type: textarea
+    id: outcome
+    attributes: { label: User outcome }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes: { label: Acceptance criteria and scope }
+    validations: { required: true }

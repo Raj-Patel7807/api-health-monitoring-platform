@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: api_health
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d api_health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports: ["6379:6379"]
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/api_health
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:5173
+      LLM_ENABLED: "false"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["8000:8000"]
+
+  worker:
+    build: ./backend
+    command: uv run celery -A app.workers.celery_app:celery_app worker --loglevel=INFO -Q monitoring,notifications,ai,maintenance
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/api_health
+      REDIS_URL: redis://redis:6379/0
+      LLM_ENABLED: "false"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  beat:
+    build: ./backend
+    command: uv run celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      LLM_ENABLED: "false"
+    depends_on:
+      redis: { condition: service_healthy }
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["5173:80"]
+
+volumes:
+  postgres_data:
