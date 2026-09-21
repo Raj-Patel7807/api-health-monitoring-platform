@@ -1,0 +1,33 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node and frontend build output
+node_modules/
+dist/
+playwright-report/
+test-results/
+
+# Logs and local data
+*.log
+*.sqlite3
+
+# Editors and operating systems
+.idea/
+.vscode/
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
