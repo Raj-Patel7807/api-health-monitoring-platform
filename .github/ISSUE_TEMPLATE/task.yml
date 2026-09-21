@@ -1,0 +1,13 @@
+name: Engineering task
+description: Plan a scoped technical task.
+title: "chore: "
+labels: [task]
+body:
+  - type: textarea
+    id: scope
+    attributes: { label: Scope }
+    validations: { required: true }
+  - type: textarea
+    id: validation
+    attributes: { label: Validation plan }
+    validations: { required: true }
