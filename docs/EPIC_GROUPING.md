@@ -1,4 +1,4 @@
-# EPIC Grouping — Distributed API Health & Incident Monitoring Platform
+# EPIC Grouping
 
 > **What this document is:** a reference for how the project's **25 user stories** are grouped into **8 EPICs** — what each EPIC contains, why the stories belong together, how large and how important each EPIC is, how EPICs depend on one another, and how everything traces back to requirements.
 >
