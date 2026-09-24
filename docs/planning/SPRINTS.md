@@ -1,6 +1,6 @@
 # Sprint Plan
 
-The project follows Scrum. Sprint length and dates are agreed by the team, so none are invented here. `US-25` is continuous governance work in every sprint. Total planning uses the source values (160 points); source inconsistencies are recorded in `EPIC_GROUPING.md`.
+The project follows Scrum. Sprint length and dates are agreed by the team, so none are invented here. `US-25` is continuous governance work in every sprint. Total planning uses the source values (152 points) after removing US-23 (worker failover, 8 points) with NFR13.
 
 | Sprint | Goal | Stories | Points | Demo / dependency |
 | --- | --- | --- | ---: | --- |
@@ -9,7 +9,7 @@ The project follows Scrum. Sprint length and dates are agreed by the team, so no
 | 3 | Confirm incidents and notify users. | US-03, US-09, US-10, US-11 | 29 | One useful alert per state transition; depends on Sprint 2. |
 | 4 | Provide visibility and access control. | US-13, US-19 | 13 | Dashboard and protected team actions; depends on results/security. |
 | 5 | Add selected refinements. | US-04, US-07, US-12, US-14, US-18 | 29 | Maintenance, assertions, retries, history, audit. |
-| 6 | Improve resilience and retention. | US-22, US-23, US-24 | 24 | Scale/failover/rollup evidence. |
+| 6 | Improve resilience and retention. | US-22, US-24 | 16 | Scale/rollup evidence. |
 | 7 | Consider Could Have work and harden demo. | US-15, US-20 | 13 | Only if Must/Should scope is stable. |
 
 The displayed points are planning capacity signals, not a promise. Split work if measured team velocity needs it. Each sprint goal needs a usable increment where practical.

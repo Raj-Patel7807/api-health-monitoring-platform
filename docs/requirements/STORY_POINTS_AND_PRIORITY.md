@@ -96,7 +96,7 @@ Priority is assigned based on:
 | **US-20** | Monitor APIs From Multiple Geographic Regions | E6 | **8** | **Could Have** |
 | **US-21** | Deploy and Maintain the Platform Within Hosting Constraints | E6 | **5** | **Must Have** |
 | **US-22** | Scale Monitoring Resources as Usage Grows | E7 | **8** | **Should Have** |
-| **US-23** | Automatically Fail Over Monitoring Workers | E7 | **8** | **Should Have** |
+
 | **US-24** | Preserve Long-Term Monitoring Data Through Data Rollups | E7 | **8** | **Should Have** |
 | **US-25** | Manage Agile Delivery, GitHub Collaboration and Requirement Decisions | E8 | **8** | **Must Have** |
 
@@ -258,12 +258,7 @@ The story covers application deployment, background workers, database, storage, 
 
 The story covers user growth, resource scaling, health-check cost, unnecessary traffic, churn measurement, and satisfaction measurement. Scaling introduces infrastructure complexity and can follow the initial implementation.
 
-## US-23 — Automatically Fail Over Monitoring Workers
 
-**Story Points:** 8  
-**Priority:** Should Have
-
-The story requires standby workers, failure detection, automatic takeover, a 10-second failover target, job continuity, logging, and duplicate-execution avoidance. It improves availability but is infrastructure-intensive.
 
 ## US-24 — Preserve Long-Term Monitoring Data Through Data Rollups
 
@@ -287,11 +282,11 @@ Because it governs project delivery and traceability throughout development, it 
 
 | Priority | Number of Stories | Percentage |
 |---|---:|---:|
-| **Must Have** | 15 | 60% |
-| **Should Have** | 8 | 32% |
-| **Could Have** | 2 | 8% |
+| **Must Have** | 15 | 62.5% |
+| **Should Have** | 7 | 29.2% |
+| **Could Have** | 2 | 8.3% |
 | **Won't Have** | 0 | 0% |
-| **Total** | **25** | **100%** |
+| **Total** | **24** | **100%** |
 
 ### Must Have
 
@@ -299,7 +294,7 @@ US-01, US-02, US-03, US-05, US-06, US-08, US-09, US-10, US-11, US-13, US-16, US-
 
 ### Should Have
 
-US-04, US-07, US-12, US-14, US-18, US-22, US-23, US-24
+US-04, US-07, US-12, US-14, US-18, US-22, US-24
 
 ### Could Have
 
@@ -346,7 +341,7 @@ Priority and story points are independent.
 | US-06 | High — 8 pts | Must Have | Core failure detection |
 | US-07 | High — 8 pts | Should Have | Advanced response-content validation |
 | US-20 | High — 8 pts | Could Have | Multi-region enhancement |
-| US-23 | High — 8 pts | Should Have | High-availability enhancement |
+
 | US-25 | High — 8 pts | Must Have | Project governance and traceability |
 
 A high story-point value does not automatically imply low priority.
@@ -411,7 +406,7 @@ US-20 → Multi-Region Monitoring
 US-21 → Deployment & Hosting
 
 US-22 → Scalability
-US-23 → Worker Failover
+
 US-24 → Data Rollups
 
 US-25 → Agile / GitHub / Slack / Requirement Governance
@@ -467,17 +462,7 @@ US-17
   └── US-19
 ```
 
-### Reliability and Infrastructure Dependencies
 
-```text
-US-05
-  ↓
-US-21
-  ↓
-US-22
-  ↓
-US-23
-```
 
 These dependencies should be considered when the team divides stories into sprints.
 
@@ -570,14 +555,14 @@ The user story IDs remain unchanged so that story points and priorities can be t
 
 # 16. Summary
 
-The updated **25 user stories** have been estimated using Fibonacci-based story points and prioritized using the MoSCoW method.
+The updated **24 user stories** have been estimated using Fibonacci-based story points and prioritized using the MoSCoW method.
 
 ### Final Summary
 
-- **Total User Stories:** 25
-- **Total Story Points:** 157
+- **Total User Stories:** 24
+- **Total Story Points:** 152
 - **Must Have:** 15
-- **Should Have:** 8
+- **Should Have:** 7
 - **Could Have:** 2
 - **Won't Have:** 0
 - **Maximum Story Size:** 8 points
@@ -588,4 +573,4 @@ The estimates provide the basis for the next Phase 1 activity: **dividing EPICs 
 
 # 17. Reference
 
-The estimation and priority assignment are based on the updated `USER_STORIES.md`, which contains 25 user stories across 8 EPICs with detailed acceptance criteria and FR/NFR/DR traceability.
+The estimation and priority assignment are based on the updated `USER_STORIES.md`, which contains 24 user stories across 8 EPICs with detailed acceptance criteria and FR/NFR/DR traceability.

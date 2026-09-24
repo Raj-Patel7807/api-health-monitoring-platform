@@ -20,7 +20,7 @@ Workers use logical queues: `monitoring`, `notifications`, `ai`, and `maintenanc
 
 ## Scaling later
 
-Scale the API and worker processes independently. Add worker replicas and queue-specific concurrency before considering separate services. PostgreSQL indexes and rollups support recent and historical queries. A standby worker and safe, idempotent tasks are later work for `US-23`; they are not implemented by this bootstrap.
+Scale the API and worker processes independently. Add worker replicas and queue-specific concurrency before considering separate services. PostgreSQL indexes and rollups support recent and historical queries. Worker resilience relies on Celery's built-in queue durability and idempotent tasks; standby-worker high-availability is out of scope for this project.
 
 ## Health
 

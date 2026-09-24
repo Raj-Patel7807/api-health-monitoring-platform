@@ -306,30 +306,29 @@ The individual stories are listed in workflow order in `USER_STORIES.md` (§12),
 
 ### E7 — Scalability, Reliability & Data Management
 
-**Role:** Platform / cross-cutting | **Points:** 24 | **Stories:** 3 | **Primary actors:** Platform Administrator / Project Development Team; DevOps; API Owner; Database Administrator
+**Role:** Platform / cross-cutting | **Points:** 16 | **Stories:** 2 | **Primary actors:** Platform Administrator / Project Development Team; DevOps; API Owner; Database Administrator
 
 **Goal.** Keep the platform working — and affordable — as users, endpoints, workers, and stored history grow.
 
 | ID | Story | Pts | Priority | Source requirements |
 |---|---|---:|---|---|
 | US-22 | Scale Monitoring Resources as Usage Grows | 8 | Should Have | NFR8, NFR10 |
-| US-23 | Automatically Fail Over Monitoring Workers | 8 | Should Have | NFR13, DR1 |
+
 | US-24 | Preserve Long-Term Monitoring Data Through Data Rollups | 8 | Should Have | NFR4, NFR14 |
 
 **What this EPIC delivers**
 
 - Support for growth toward **200 active users within 3 months**, with per-check cost **below $0.01 for 95% of checks**, and no extra traffic to monitored APIs caused by scaling (AC-22.1 – 22.4).
-- A standby worker that takes over **within 10 seconds** of a primary crash, without losing or duplicating jobs (AC-23.4, 23.5, 23.7).
 - Daily rollups of older minute-level data that preserve what long-term reporting needs and keep history reachable (AC-24.2 – 24.6).
 
-**Why these stories belong together.** All three protect **long-term operation** — compute (US-22), availability (US-23), and storage (US-24) — and become important only once the core loop is running under real load.
+**Why these stories belong together.** Both protect **long-term operation** — compute (US-22) and storage (US-24) — and become important only once the core loop is running under real load.
 
 **Boundaries and notes**
 
 - **All Should Have, all 8 points:** this EPIC can follow the core system, but it is 24 points of infrastructure-heavy work.
 - **Design decision to settle early:** US-08 says monitoring data is not deleted in normal operation (AC-08.7), while US-24 aggregates older data into daily summaries. Agree what "no loss of required history" means (AC-24.5) *before* implementing either.
 - **Measured vs built:** AC-22.5 (churn below 5%) and AC-22.6 (satisfaction of 4.5/5 or higher) are business KPIs that must be *measurable*, not features to build.
-- **Documented dependency chain:** US-05 → US-21 → US-22 → US-23.
+- **Documented dependency chain:** US-05 → US-21 → US-22.
 
 ---
 
@@ -389,14 +388,14 @@ The individual stories are listed in workflow order in `USER_STORIES.md` (§12),
 | US-20 | Monitor APIs From Multiple Geographic Regions | E6 | 8 | Could Have | FR18 |
 | US-21 | Deploy and Maintain the Platform Within Hosting Constraints | E6 | 5 | Must Have | NFR12 |
 | US-22 | Scale Monitoring Resources as Usage Grows | E7 | 8 | Should Have | NFR8, NFR10 |
-| US-23 | Automatically Fail Over Monitoring Workers | E7 | 8 | Should Have | NFR13, DR1 |
+
 | US-24 | Preserve Long-Term Monitoring Data Through Data Rollups | E7 | 8 | Should Have | NFR4, NFR14 |
 | US-25 | Manage Agile Delivery, GitHub Collaboration and Requirement Decisions | E8 | 8 | Must Have | NFR16, NFR17, NFR18, DR6, DR7 |
 
 **Priority membership**
 
 - **Must Have (15):** US-01, 02, 03, 05, 06, 08, 09, 10, 11, 13, 16, 17, 19, 21, 25
-- **Should Have (8):** US-04, 07, 12, 14, 18, 22, 23, 24
+- **Should Have (7):** US-04, 07, 12, 14, 18, 22, 24
 - **Could Have (2):** US-15, 20
 - **Won't Have (0)**
 
@@ -414,7 +413,7 @@ Incidents:        US-06 / US-07 → US-09 → US-10 → US-11 → US-12
 Dashboard/report: US-08 → US-13 → US-14 → US-15
 Security:         US-17 → US-18
                   US-17 → US-19
-Infrastructure:   US-05 → US-21 → US-22 → US-23
+Infrastructure:   US-05 → US-21 → US-22
 ```
 
 ### 7.2 Cross-EPIC dependency view
@@ -434,7 +433,7 @@ Infrastructure:   US-05 → US-21 → US-22 → US-23
 | US-19 (E6) | US-15 (E4) | Reports respect user authorisation (AC-15.6) | Derived |
 | US-08 (E2) | US-24 (E7) | Rollups summarise stored results | Derived |
 | US-05 / US-06 / US-08 (E2) | US-20 (E6) | Regional checks reuse the pipeline and tag results by region (AC-20.3, 20.4) | Derived |
-| US-05 (E2) | US-23 (E7) | Failover must take over scheduled jobs (AC-23.5) | Derived |
+
 
 ### 7.3 Reading the flow correctly
 
@@ -454,10 +453,10 @@ The full requirement-to-story matrix is maintained in `USER_STORIES.md` §10. Th
 | **E4** | FR4, FR9, FR10, FR14 | NFR2, NFR4, NFR9, NFR10 | DR3 |
 | **E5** | FR12 | NFR5, NFR6, NFR11, NFR15 | DR2, DR4 |
 | **E6** | FR17, FR18 | NFR5, NFR6, NFR12 | DR2 |
-| **E7** | — | NFR4, NFR8, NFR10, NFR13, NFR14 | DR1 |
+| **E7** | — | NFR4, NFR8, NFR10, NFR14 | DR1 |
 | **E8** | — | NFR16, NFR17, NFR18 | DR6, DR7 |
 
-**Coverage check:** all **18 FR**, **18 NFR**, and **7 DR** items appear in at least one EPIC. Some links (US-21 → NFR5 / DR2, US-23 → DR1) come from the traceability matrix rather than the story header; both are included above.
+**Coverage check:** all **18 FR**, **17 NFR**, and **7 DR** items appear in at least one EPIC. Some links (US-21 → NFR5 / DR2) come from the traceability matrix rather than the story header and are included above.
 
 **Pattern worth noting:** functional requirements concentrate in E1–E4 (the spine), non-functional requirements dominate E5–E7, and E8 alone carries the process requirements. The EPIC boundaries therefore also separate *what the product does* from *how well and how safely it does it*.
 
@@ -519,10 +518,10 @@ Story IDs would not change. If the team adopts this, update the EPIC field in `U
 | **2** | Incidents, alerts, and visibility | US-03, US-09, US-10, US-11, US-13 | 34 |
 | **3** | Access control | US-19 | 8 |
 | **4** | Should Have product features | US-04, US-07, US-12, US-14, US-18 | 26 |
-| **5** | Scale and resilience | US-22, US-23, US-24 | 24 |
+| **5** | Scale and resilience | US-22, US-24 | 16 |
 | **6** | Could Have enhancements | US-15, US-20 | 13 |
 | **Continuous** | Project governance | US-25 | 8 |
-| | **Total** | | **160** |
+| | **Total** | | **152** |
 
 **Reasoning**
 
@@ -545,9 +544,9 @@ These are inconsistencies found *between or inside* the two source documents. Th
 | 1 | **Total story points** | `STORY_POINTS_AND_PRIORITY.md` states **157** in two places. Summing its own per-story values, and its own distribution table (2×3 + 10×5 + 13×8), both give **160**. | **160** |
 | 2 | **Priority scale** | `USER_STORIES.md` uses **High / Medium** (19 High, 6 Medium). `STORY_POINTS_AND_PRIORITY.md` uses **MoSCoW**. | **MoSCoW** |
 | 3 | **US-21 priority** | Medium in `USER_STORIES.md`, **Must Have** in the MoSCoW file. It is the only story whose priority rises. | **Must Have** |
-| 4 | **High → Should Have** | Five stories rated High become Should Have: US-07, US-12, US-14, US-18, US-23. | **Should Have** |
+| 4 | **High → Should Have** | Four stories rated High become Should Have: US-07, US-12, US-14, US-18. | **Should Have** |
 | 5 | **US-25 title** | The story index in `USER_STORIES.md` says "…Agile Delivery, Collaboration and…", while the detailed heading and the points file say "…Agile Delivery, **GitHub** Collaboration and…". | **Heading / points-file title** |
-| 6 | **Traceability details** | US-13 lists NFR10 in its header, but the matrix maps NFR10 only to US-22. The matrix maps US-21 to NFR5 / DR2 and US-23 to DR1, though their headers do not list them. | **Union of both** |
+| 6 | **Traceability details** | US-13 lists NFR10 in its header, but the matrix maps NFR10 only to US-22. The matrix maps US-21 to NFR5 / DR2, though its header does not list them. | **Union of both** |
 
 **Recommended fixes in the source documents**
 
