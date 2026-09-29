@@ -6,7 +6,7 @@
 
 **Overall Purpose:** The primary purpose of non-functional requirements is to establish the operational constraints, quality standards, performance metrics, and governance processes that govern how the platform behaves under load, recovers from failure, protects data, and maintains long-term sustainability. Specifically, they serve to:
 * **Define Quality & Performance Benchmarks:** Specify acceptable thresholds for system latency, response times, throughput, and operational efficiency under varying loads.
-* **Ensure Reliability & Resiliency:** Mandate high-availability structures, worker failover protocols, and data protection mechanisms to maintain uninterrupted service.
+* **Ensure Reliability & Resiliency:** Mandate high-availability structures and data protection mechanisms to maintain uninterrupted service.
 * **Protect System Security & Compliance:** Guarantee data privacy through strict encryption standards, tamper-proof logging, and vulnerability prevention.
 * **Guide System Process & Development Governance:** Align team development practices with established software engineering methodologies, structured source control, and centralized communication workflows.
 
@@ -28,7 +28,7 @@
 | **NFR10** | System should be able to grow to support 200 active users in 3 months, keep user drop-off (churn) under 5%, and keep satisfaction rating at 4.5 out of 5 or higher. |
 | **NFR11** | Health-check requests sent to other people's APIs should be rate-limited and configurable, so our platform is not seen as abusive traffic. |
 | **NFR12** | The whole system should be easy to deploy and maintain within whatever hosting setup (compute, database, storage, background workers) we finally choose. |
-| **NFR13** | Worker Failover & High Availability: Standby worker nodes must automatically take over monitoring tasks within 10 seconds if a primary worker node crashes. |
+
 | **NFR14** | Smart Storage vs. Infinite Retention (Data Retention): Roll up old minute-by-minute data into daily summaries. |
 | **NFR15** | Tamper-Proof Audit Logging: Strict operational traceability for configuration changes. |
 | **NFR16** | Process: The project development must strictly follow the Agile (SCRUM) methodology. |
@@ -51,7 +51,7 @@
 * **NFR10 Purpose:** Ensures platform scalability, user retention, and customer satisfaction goals are met as the user base expands over initial deployment quarters.
 * **NFR11 Purpose:** Establishes responsible outbound traffic behavior to prevent target host throttling, IP blacklisting, or unintentional Denial of Service (DoS) conditions on monitored APIs.
 * **NFR12 Purpose:** Promotes maintainability and infrastructure flexibility across varied deployment targets (cloud compute, containers, managed databases) to simplify DevOps management and upgrades.
-* **NFR13 Purpose:** Maintains continuous system availability by utilizing automated worker failovers to prevent single points of failure from halting background health monitoring routines.
+
 * **NFR14 Purpose:** Optimizes database storage utilization over time by aggregating granular minute-by-minute metrics into daily rollups, preserving storage capacity while maintaining infinite retention.
 * **NFR15 Purpose:** Guarantees strict operational accountability and security auditability by maintaining non-rewritable, tamper-proof event logs for all administrative actions and configuration updates.
 * **NFR16 Purpose:** Standardizes the software development lifecycle using structured Agile (SCRUM) iterations to ensure consistent project velocity, predictability, and team coordination.

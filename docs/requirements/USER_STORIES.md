@@ -93,7 +93,7 @@ The acceptance criteria are intentionally detailed enough to serve as a direct b
 | US-20 | Monitor APIs From Multiple Geographic Regions | E6 |
 | US-21 | Deploy and Maintain the Platform Within Hosting Constraints | E6 |
 | US-22 | Scale Monitoring Resources as Usage Grows | E7 |
-| US-23 | Automatically Fail Over Monitoring Workers | E7 |
+
 | US-24 | Preserve Long-Term Monitoring Data Through Data Rollups | E7 |
 | US-25 | Manage Agile Delivery, Collaboration and Requirement Decisions | E8 |
 
@@ -987,50 +987,6 @@ Uptime % = ((Total Time - Downtime) / Total Time) × 100
 
 - User satisfaction shall be measurable against the project target of **4.5 out of 5 or higher**.
 
----
-
-## US-23 — Automatically Fail Over Monitoring Workers
-
-**EPIC:** E7 — Scalability, Reliability & Data Management  
-**Primary Actor:** Platform Administrator / Project Development Team; DevOps / Deployment-Experienced Developer  
-**Priority:** High  
-**Source Requirements:** NFR13, DR1
-
-### User Story
-
-> **As a platform administrator, I want a standby monitoring worker to automatically take over when a primary worker fails, so that health monitoring continues without a prolonged interruption.**
-
-### Acceptance Criteria
-
-**AC-23.1 — Standby worker**
-
-- A standby worker configuration shall be available when high availability is enabled.
-
-**AC-23.2 — Failure detection**
-
-- the system shall initiate the failover process.
-
-**AC-23.3 — Automatic takeover**
-
-- an available standby worker shall take over the required monitoring workload.
-
-**AC-23.4 — Failover time**
-
-- Standby takeover shall occur within **10 seconds** of detecting the primary worker crash.
-
-**AC-23.5 — Job continuity**
-
-- A single worker failure shall not permanently lose monitoring jobs.
-
-**AC-23.6 — Failover logging**
-
-- Failover events shall be recorded for operational diagnosis.
-
-**AC-23.7 — Duplicate execution**
-
-- Worker coordination shall avoid duplicate execution of the same monitoring job during failover where the job-queue architecture supports such coordination.
-
----
 
 ## US-24 — Preserve Long-Term Monitoring Data Through Data Rollups
 
@@ -1208,7 +1164,7 @@ The following table shows where the NFRs are represented in the user stories and
 | NFR10 | 200 active users in 3 months, churn below 5%, satisfaction ≥4.5/5 | US-22 |
 | NFR11 | Configurable and rate-limited outbound health-check traffic | US-16 |
 | NFR12 | Deployable and maintainable within selected hosting environment | US-21 |
-| NFR13 | Standby worker takeover within 10 seconds | US-23 |
+
 | NFR14 | Roll up old minute-level data into daily summaries | US-24 |
 | NFR15 | Tamper-proof operational traceability for configuration changes | US-18 |
 | NFR16 | Agile/SCRUM development | US-25 |
@@ -1221,7 +1177,7 @@ The following table shows where the NFRs are represented in the user stories and
 
 | DR | Requirement | Covered By |
 |---|---|---|
-| DR1 | Health checks run in the background and do not block the user-facing application | US-05, US-23 |
+| DR1 | Health checks run in the background and do not block the user-facing application | US-05 |
 | DR2 | Communication follows HTTP/HTTPS rules and TLS 1.3 is used for network transmission | US-06, US-17, US-21 |
 | DR3 | Uptime uses `(Total Time - Downtime) / Total Time × 100` | US-14 |
 | DR4 | Reasonable intervals and backoff are used when monitoring external APIs | US-04, US-16 |
@@ -1261,13 +1217,13 @@ The following table shows where the NFRs are represented in the user stories and
 | Stakeholder | Relevant User Stories |
 |---|---|
 | API Developer / API Owner | US-01, US-02, US-03, US-04, US-05, US-06, US-07, US-08, US-14, US-15, US-20, US-24 |
-| DevOps / Deployment-Experienced Developer | US-05, US-06, US-16, US-21, US-22, US-23, US-24 |
+| DevOps / Deployment-Experienced Developer | US-05, US-06, US-16, US-21, US-22, US-24 |
 | Incident Responder / On-call Developer | US-09, US-10, US-11, US-12, US-13 |
 | Team Lead / Project Maintainer | US-13, US-14, US-15, US-18, US-25 |
-| Platform Administrator / Project Development Team | US-05, US-17, US-18, US-19, US-21, US-22, US-23, US-24, US-25 |
+| Platform Administrator / Project Development Team | US-05, US-17, US-18, US-19, US-21, US-22, US-24, US-25 |
 | Notification and Integration Services | US-03, US-11, US-12 |
 | Monitored API Owners / Target Services | US-04, US-06, US-16, US-20 |
-| Hosting / Infrastructure Provider | US-21, US-22, US-23, US-24 |
+| Hosting / Infrastructure Provider | US-21, US-22, US-24 |
 | Course Instructor / Teaching Team | US-25 |
 | Database Administrator | US-08, US-14, US-15, US-18, US-24 |
 
@@ -1307,13 +1263,13 @@ The following table shows where the NFRs are represented in the user stories and
 | NFR10 | US-22 |
 | NFR11 | US-16 |
 | NFR12 | US-21 |
-| NFR13 | US-23 |
+
 | NFR14 | US-24 |
 | NFR15 | US-18 |
 | NFR16 | US-25 |
 | NFR17 | US-25 |
 | NFR18 | US-25 |
-| DR1 | US-05, US-23 |
+| DR1 | US-05 |
 | DR2 | US-06, US-17, US-21 |
 | DR3 | US-14 |
 | DR4 | US-04, US-16 |
@@ -1389,7 +1345,7 @@ US-19 → RBAC and access control
 US-20 → Multi-region monitoring
 US-21 → Hosting and deployment
 US-22 → Scalability and cost
-US-23 → Worker failover
+
 US-24 → Long-term data rollups
 US-25 → Agile, GitHub, Slack and requirement governance
 ```
