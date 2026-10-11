@@ -95,6 +95,7 @@ def test_error_messages_do_not_leak_secrets() -> None:
     assert "super-secret" not in str(exc.value)
     assert token not in str(exc.value)
 
+
 def test_key_from_dotenv_works() -> None:
     """Uses the real ENCRYPTION_KEY from .env (or the environment)."""
     from app.core.config import get_settings
