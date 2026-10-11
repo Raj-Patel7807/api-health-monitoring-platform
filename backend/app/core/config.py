@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     llm_enabled: bool = False
 
+    # Base64url-encoded 32-byte AES-256 key. Generate: python -m app.core.crypto
+    # No default on purpose: a shared default key would defeat the encryption.
+    encryption_key: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
