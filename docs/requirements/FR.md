@@ -17,7 +17,7 @@
 | ID | Requirement |
 | :--- | :--- |
 | **FR1** | User can add (register) an API endpoint by giving its URL, the status code it should return, and how often it should be checked. |
-| **FR2** | System keeps checking each saved endpoint again and again using a background job queue (BullMQ). After every check it schedules the next one. |
+| **FR2** | System keeps checking each saved endpoint again and again using a background job queue (Celery + Redis). After every check it schedules the next one. |
 | **FR3** | System can tell when an endpoint has failed - this includes timeout, wrong status code, connection error, or bad SSL certificate. |
 | **FR4** | System calculates uptime percentage for each endpoint and gives it through a reporting API. |
 | **FR5** | System does not create an incident on the very first failure. It waits and only creates an incident once failures cross a set limit (like 3 in a row). |

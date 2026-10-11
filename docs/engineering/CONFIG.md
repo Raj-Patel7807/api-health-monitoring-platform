@@ -21,4 +21,4 @@ Use local, test, staging, and production environments. `.env.example` files cont
 
 Docker Compose supplies PostgreSQL with pgvector and Redis. The backend and worker use the same `DATABASE_URL` and `REDIS_URL`. The frontend uses `VITE_API_BASE_URL`, defaulting to `http://localhost:8000`. GitHub Actions reads repository secrets only when a later deployment needs them. GHCR publishing uses `GITHUB_TOKEN`; no cloud provider is selected yet.
 
-Production must use HTTPS/TLS and restrictive CORS. Safe defaults let the API and tests start with AI disabled.
+Production must use HTTPS with TLS 1.3 and restrictive CORS. Safe defaults let the API and tests start with AI disabled.
