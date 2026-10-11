@@ -36,7 +36,7 @@ services:
 
   worker:
     build: ./backend
-    command: uv run celery -A app.workers.celery_app:celery_app worker --loglevel=INFO -Q monitoring,notifications,ai,maintenance
+    command: uv run --no-dev celery -A app.workers.celery_app:celery_app worker --loglevel=INFO -Q monitoring,notifications,ai,maintenance
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/api_health
       REDIS_URL: redis://redis:6379/0
@@ -47,7 +47,7 @@ services:
 
   beat:
     build: ./backend
-    command: uv run celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
+    command: uv run --no-dev celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
     environment:
       REDIS_URL: redis://redis:6379/0
       LLM_ENABLED: "false"
