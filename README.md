@@ -23,7 +23,7 @@ cd backend
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy app
-uv run pytest --cov=app
+uv run pytest tests/unit --cov=app --cov-fail-under=80
 ```
 
 ```bash
@@ -34,5 +34,7 @@ npm run typecheck
 npm run test
 npm run build
 ```
+
+For database integration tests, start a disposable PostgreSQL test database, apply `uv run alembic upgrade head` with `DATABASE_URL` set, then run `uv run pytest tests/integration`. CI sets this up automatically.
 
 Read `AGENT.md` before contributing. The design, configuration, tests, and sprint plan are in `docs/`.
