@@ -39,16 +39,20 @@ const STACK = [
     },
 ];
 
-
-
 export function App() {
     return (
         <div className="page-wrapper">
             {/* ── Header ──────────────────────────────────────────────── */}
             <header className="site-header">
                 <div className="container">
-                    <a href="/" className="logo" aria-label="API Health Monitor home">
-                        <div className="logo-icon" aria-hidden="true">📡</div>
+                    <a
+                        href="/"
+                        className="logo"
+                        aria-label="API Health Monitor home"
+                    >
+                        <div className="logo-icon" aria-hidden="true">
+                            📡
+                        </div>
                         <span className="logo-text">API Health Monitor</span>
                     </a>
                     <span className="header-badge">Header</span>
@@ -60,7 +64,10 @@ export function App() {
                 <section className="hero" aria-labelledby="hero-heading">
                     <div className="container">
                         <div className="hero-eyebrow" role="note">
-                            <span className="hero-eyebrow-dot" aria-hidden="true" />
+                            <span
+                                className="hero-eyebrow-dot"
+                                aria-hidden="true"
+                            />
                             Platform Foundation Active
                         </div>
 
@@ -70,9 +77,10 @@ export function App() {
                         </h1>
 
                         <p className="hero-sub">
-                            Monitor endpoints, detect failures in under two minutes, confirm
-                            incidents, and dispatch alerts — all with responsible rate limiting
-                            and AES-256 encrypted configuration.
+                            Monitor endpoints, detect failures in under two
+                            minutes, confirm incidents, and dispatch alerts —
+                            all with responsible rate limiting and AES-256
+                            encrypted configuration.
                         </p>
 
                         {/* Live backend status widget */}
@@ -107,9 +115,15 @@ export function App() {
                                     >
                                         {item.icon}
                                     </span>
-                                    <div className="stack-card-name">{item.name}</div>
-                                    <p className="stack-card-role">{item.role}</p>
-                                    <span className="stack-card-tag">{item.tag}</span>
+                                    <div className="stack-card-name">
+                                        {item.name}
+                                    </div>
+                                    <p className="stack-card-role">
+                                        {item.role}
+                                    </p>
+                                    <span className="stack-card-tag">
+                                        {item.tag}
+                                    </span>
                                 </article>
                             ))}
                         </div>
@@ -120,17 +134,23 @@ export function App() {
             {/* ── Footer ──────────────────────────────────────────────── */}
             <footer className="site-footer">
                 <div className="container">
-                    <p className="footer-text">
-                        © 2026 API Health Monitor
-                    </p>
-                    <div className="footer-stack" aria-label="Technology stack chips">
-                        {["React", "FastAPI", "PostgreSQL", "Redis", "Celery", "Docker"].map(
-                            (t) => (
-                                <span key={t} className="footer-chip">
-                                    {t}
-                                </span>
-                            ),
-                        )}
+                    <p className="footer-text">© 2026 API Health Monitor</p>
+                    <div
+                        className="footer-stack"
+                        aria-label="Technology stack chips"
+                    >
+                        {[
+                            "React",
+                            "FastAPI",
+                            "PostgreSQL",
+                            "Redis",
+                            "Celery",
+                            "Docker",
+                        ].map((t) => (
+                            <span key={t} className="footer-chip">
+                                {t}
+                            </span>
+                        ))}
                     </div>
                 </div>
             </footer>

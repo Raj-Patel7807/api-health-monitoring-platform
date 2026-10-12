@@ -20,7 +20,10 @@ function renderApp() {
 test("renders the main heading", () => {
     renderApp();
     expect(
-        screen.getByRole("heading", { level: 1, name: /distributed api health/i }),
+        screen.getByRole("heading", {
+            level: 1,
+            name: /distributed api health/i,
+        }),
     ).toBeInTheDocument();
 });
 
@@ -31,15 +34,20 @@ test("renders the stack section heading", () => {
     ).toBeInTheDocument();
 });
 
-test("renders all four sprint cards", () => {
+test("renders all six stack cards", () => {
     renderApp();
-    expect(screen.getByText("Safe Foundation")).toBeInTheDocument();
-    expect(screen.getByText("Monitoring Loop")).toBeInTheDocument();
-    expect(screen.getByText("Store, Confirm & Alert")).toBeInTheDocument();
-    expect(screen.getByText("Visibility & Access")).toBeInTheDocument();
+    // Full card names are unique — safe to use getByText.
+    expect(screen.getByText("React 18 + TypeScript")).toBeInTheDocument();
+    expect(screen.getByText("FastAPI + Python")).toBeInTheDocument();
+    expect(screen.getByText("PostgreSQL + pgvector")).toBeInTheDocument();
+    expect(screen.getByText("Celery + Celery Beat")).toBeInTheDocument();
+    expect(screen.getByText("Docker Compose")).toBeInTheDocument();
+    // "Redis" also appears in the footer chip, so assert at least one match.
+    expect(screen.getAllByText("Redis").length).toBeGreaterThanOrEqual(1);
 });
 
-test("sprint 1 is marked as In Progress", () => {
+test("renders the live backend status widget", () => {
     renderApp();
-    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByText("Backend API")).toBeInTheDocument();
 });

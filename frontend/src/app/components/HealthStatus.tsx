@@ -24,11 +24,19 @@ export function HealthStatus() {
           ? "status--error"
           : "status--ok";
 
-    const statusText = isLoading ? "checking…" : isError ? "unavailable" : data?.status ?? "ok";
+    const statusText = isLoading
+        ? "checking…"
+        : isError
+          ? "unavailable"
+          : (data?.status ?? "ok");
 
     return (
         <div className="status-banner">
-            <div className={`status-card ${statusClass}`} role="status" aria-live="polite">
+            <div
+                className={`status-card ${statusClass}`}
+                role="status"
+                aria-live="polite"
+            >
                 <div className="status-indicator">
                     {isLoading ? (
                         <span className="spinner" aria-hidden="true" />
@@ -39,7 +47,10 @@ export function HealthStatus() {
                     <span className="status-value">{statusText}</span>
                 </div>
                 <div className="status-divider" aria-hidden="true" />
-                <span className="status-endpoint" aria-label={`Endpoint: ${apiBase}/health`}>
+                <span
+                    className="status-endpoint"
+                    aria-label={`Endpoint: ${apiBase}/health`}
+                >
                     {apiBase}/health
                 </span>
             </div>
