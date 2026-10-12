@@ -71,15 +71,13 @@ export function App() {
                             Platform Foundation Active
                         </div>
 
-                        <h1 id="hero-heading">
-                            Distributed API Health
-                            <br />& Incident Monitoring
-                        </h1>
+                        <h1 id="hero-heading">API Health Monitor</h1>
 
                         <p className="hero-sub">
-                            Monitor endpoints, detect failures in under two
-                            minutes, confirm incidents, and dispatch alerts —
-                            all with responsible rate limiting and AES-256
+                            Distributed API Health &amp; Incident Monitoring
+                            Platform — monitor endpoints, detect failures in
+                            under two minutes, confirm incidents, and dispatch
+                            alerts with responsible rate limiting and AES-256
                             encrypted configuration.
                         </p>
 

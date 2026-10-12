@@ -22,7 +22,7 @@ test("renders the main heading", () => {
     expect(
         screen.getByRole("heading", {
             level: 1,
-            name: /distributed api health/i,
+            name: "API Health Monitor",
         }),
     ).toBeInTheDocument();
 });
