@@ -7,5 +7,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
+COPY database/schema.sql ./database/schema.sql
 COPY app ./app
 CMD ["sh", "-c", "uv run --no-dev alembic upgrade head && uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port 8000"]
