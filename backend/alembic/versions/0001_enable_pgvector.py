@@ -1,22 +1,23 @@
 """initial schema mvp
 
 Revision ID: 0001
-Revises: 
+Revises:
 Create Date: 2026-10-12 00:00:00.000000
 
 """
-from pathlib import Path
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+from pathlib import Path
+
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '0001'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "0001"
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _load_statements_from_sql(sql_file_path: Path) -> list[str]:
@@ -39,7 +40,13 @@ def _load_statements_from_sql(sql_file_path: Path) -> list[str]:
         while i < len(line):
             ch = line[i]
             # Detect single line comment -- outside quoted literals
-            if not in_single_quote and not in_double_quote and ch == "-" and i + 1 < len(line) and line[i + 1] == "-":
+            if (
+                not in_single_quote
+                and not in_double_quote
+                and ch == "-"
+                and i + 1 < len(line)
+                and line[i + 1] == "-"
+            ):
                 current.append(line[i:])
                 break
 
@@ -73,29 +80,11 @@ def _load_statements_from_sql(sql_file_path: Path) -> list[str]:
 
 def upgrade() -> None:
     """Apply initial schema MVP from schema_mvp.sql."""
-    current_dir = Path(__file__).resolve().parent
-    candidates = [
-        current_dir.parent.parent / "database" / "schema_mvp.sql",
-        current_dir.parent.parent / "database" / "schema.sql",
-        current_dir.parent.parent / "schema_mvp.sql",
-        current_dir.parent.parent / "schema.sql",
-        current_dir.parent.parent.parent / "database" / "schema_mvp.sql",
-        current_dir.parent.parent.parent / "database" / "schema.sql",
-        current_dir.parent.parent.parent / "schema_mvp.sql",
-        current_dir.parent.parent.parent / "schema.sql",
-        current_dir.parent / "schema_mvp.sql",
-        current_dir / "schema_mvp.sql",
-        Path("/app/database/schema_mvp.sql"),
-        Path("/app/database/schema.sql"),
-        Path("/app/schema_mvp.sql"),
-    ]
 
-    sql_path = next((p for p in candidates if p.exists()), None)
-    if not sql_path:
-        raise FileNotFoundError(
-            f"Source schema SQL file not found in any expected location: {[str(p) for p in candidates[:4]]}"
-        )
+    sql_path = Path(__file__).resolve().parents[2] / "database" / "schema.sql"
 
+    if not sql_path.is_file():
+        raise FileNotFoundError(f"Schema file missing: {sql_path}")
 
     statements = _load_statements_from_sql(sql_path)
     for statement in statements:

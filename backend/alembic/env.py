@@ -4,10 +4,9 @@ import subprocess
 from logging.config import fileConfig
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
-from dotenv import load_dotenv
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -61,7 +60,7 @@ def get_database_url() -> str:
             try:
                 with socket.create_connection((host, port), timeout=0.5):
                     reachable = True
-            except (OSError, socket.timeout):
+            except (TimeoutError, OSError):
                 reachable = False
 
             if not reachable:
@@ -75,7 +74,9 @@ def get_database_url() -> str:
                     if res.returncode == 0 and res.stdout.strip():
                         wsl_ip = res.stdout.strip().split()[0]
                         with socket.create_connection((wsl_ip, port), timeout=0.5):
-                            new_netloc = parsed.netloc.replace(f"@{host}", f"@{wsl_ip}").replace(host, wsl_ip)
+                            new_netloc = parsed.netloc.replace(f"@{host}", f"@{wsl_ip}").replace(
+                                host, wsl_ip
+                            )
                             parsed = parsed._replace(netloc=new_netloc)
                             parseable_url = urlunparse(parsed)
                 except Exception:

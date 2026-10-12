@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Locate repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 echo "Running Database Schema Verification Suite..."
 cd "${REPO_ROOT}"
@@ -21,4 +21,4 @@ else
     PYTHON_BIN="python3"
 fi
 
-"${PYTHON_BIN}" scripts/verify_schema.py
+"${PYTHON_BIN}" backend/database/verify_schema.py
