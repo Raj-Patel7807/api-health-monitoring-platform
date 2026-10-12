@@ -1,0 +1,48 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose file
+        run: docker compose -f docker-compose.yml config -q
+      - name: Build and start the complete stack
+        run: docker compose -f docker-compose.yml up -d --build --wait --wait-timeout 180
+      - name: Verify backend HTTP response
+        run: curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 --max-time 5 http://localhost:8000/health
+      - name: Verify frontend HTTP response
+        run: curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 --max-time 5 http://localhost:5173/
+      - name: Verify all six services are still running
+        shell: bash
+        run: |
+          set -euo pipefail
+          services="$(docker compose -f docker-compose.yml ps --status running --services)"
+          for service in postgres redis backend worker beat frontend; do
+            echo "$services" | grep -Fxq "$service" || {
+              echo "Service is not running: $service"
+              exit 1
+            }
+          done
+      - name: Show container status and logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml ps -a
+          docker compose -f docker-compose.yml logs --tail=100
+      - name: Remove test containers and volumes
+        if: always()
+        run: docker compose -f docker-compose.yml down -v --remove-orphans

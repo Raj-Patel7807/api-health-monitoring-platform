@@ -11,7 +11,7 @@ Thank you for contributing. This is a team course project. Keep each change smal
 
 ## Development checks
 
-Backend: run `uv sync --frozen`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy app`, and `uv run pytest --cov=app` from `backend/`.
+Backend: run `uv sync --frozen`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy app`, and `uv run pytest tests/unit --cov=app --cov-fail-under=80` from `backend/`. Run `uv run pytest tests/integration` only with a disposable migrated PostgreSQL test database and `DATABASE_URL` configured.
 
 Frontend: run `npm ci`, `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` from `frontend/`.
 

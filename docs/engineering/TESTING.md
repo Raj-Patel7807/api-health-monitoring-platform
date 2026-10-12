@@ -14,8 +14,8 @@ Use Vitest and Testing Library for components, hooks, utilities, routes, and moc
 
 ## Commands
 
-Backend: `uv sync --frozen`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy app`, and `uv run pytest --cov=app --cov-report=term-missing`.
+Backend unit checks (no external services needed): `uv sync --frozen`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy app`, and `uv run pytest tests/unit --cov=app --cov-report=term-missing --cov-fail-under=80`. Database integration tests are run separately with a disposable PostgreSQL service after `alembic upgrade head`, using `uv run pytest tests/integration`. Set `DATABASE_URL` to the disposable database for the migration and integration-test steps; never use production data.
 
 Frontend: `npm ci`, `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
 
-Use `docker compose config` for compose validation. Integration CI starts PostgreSQL and Redis before migration and integration checks.
+Use `docker compose -f docker-compose.yml config -q` for Compose validation. Integration CI starts disposable PostgreSQL and Redis before migration and integration checks. Docker Smoke CI builds and boots the complete Compose stack, checks HTTP endpoints and worker/scheduler process liveness, then destroys its temporary containers and volumes. It is not a substitute for full end-to-end monitoring tests.

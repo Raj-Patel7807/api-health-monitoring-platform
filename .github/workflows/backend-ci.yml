@@ -1,18 +1,40 @@
-name: Backend CI
+name: CI Pipeline
+
 on:
   pull_request:
+    branches: [main]
   push:
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: backend } }
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with: { python-version: "3.12", enable-cache: true }
-      - run: uv sync --frozen --all-groups
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run mypy app
-      - run: uv run pytest --cov=app --cov-report=term-missing
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.12.5'
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
+      - name: Type check
+        run: uv run mypy app
+      - name: Unit tests and coverage
+        run: uv run pytest tests/unit --cov=app --cov-report=term-missing --cov-fail-under=80
