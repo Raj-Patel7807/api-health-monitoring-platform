@@ -19,6 +19,7 @@ dependencies = [
   "python-jose[cryptography]>=3.3,<4",
   "bcrypt>=4.0,<6",
   "asyncpg>=0.29,<1",
+  "email-validator",
 ]
 
 [dependency-groups]
