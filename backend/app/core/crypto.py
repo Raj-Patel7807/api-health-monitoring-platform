@@ -22,12 +22,21 @@ NONCE_SIZE_BYTES = 12  # recommended nonce size for GCM
 _VERSION = b"\x01"
 
 
-class EncryptionConfigError(Exception):
+class CryptoError(Exception):
+    """Base class for all errors raised by this module."""
+
+
+class EncryptionConfigError(CryptoError):
     """The encryption key is missing or malformed."""
 
 
-class DecryptionError(Exception):
+class DecryptionError(CryptoError):
     """Ciphertext is malformed, tampered with, or the key is wrong."""
+
+
+def _b64decode(value: str) -> bytes:
+    """Strict base64url decode: rejects stray characters instead of skipping them."""
+    return base64.b64decode(value.encode("ascii"), altchars=b"-_", validate=True)
 
 
 def generate_key() -> str:
@@ -42,12 +51,13 @@ def _load_key(key: str | None) -> bytes:
 
         key = get_settings().encryption_key
 
+    key = key.strip()
     if not key:
         raise EncryptionConfigError(
             "ENCRYPTION_KEY is not set. Generate one with: python -m app.core.crypto"
         )
     try:
-        raw = base64.urlsafe_b64decode(key.encode("ascii"))
+        raw = _b64decode(key)
     except (binascii.Error, UnicodeEncodeError, ValueError):
         raise EncryptionConfigError("ENCRYPTION_KEY is not valid base64url.") from None
     if len(raw) != KEY_SIZE_BYTES:
@@ -63,8 +73,12 @@ def encrypt(plaintext: str, *, key: str | None = None, aad: bytes | None = None)
     ``aad`` (optional) binds the ciphertext to a context, e.g. the row id, so it
     cannot be copied to another row. The same ``aad`` must be given to decrypt.
     """
+    if not isinstance(plaintext, str):
+        raise TypeError("plaintext must be a str")
     nonce = os.urandom(NONCE_SIZE_BYTES)
-    sealed = AESGCM(_load_key(key)).encrypt(nonce, plaintext.encode("utf-8"), aad)
+    sealed = AESGCM(_load_key(key)).encrypt(
+        nonce, plaintext.encode("utf-8"), _VERSION + (aad or b"")
+    )
     return base64.urlsafe_b64encode(_VERSION + nonce + sealed).decode("ascii")
 
 
@@ -76,11 +90,13 @@ def decrypt(token: str, *, key: str | None = None, aad: bytes | None = None) -> 
     """
     aes = AESGCM(_load_key(key))
     try:
-        data = base64.urlsafe_b64decode(token.encode("ascii"))
+        data = _b64decode(token)
         if data[:1] != _VERSION or len(data) < 1 + NONCE_SIZE_BYTES + 16:
             raise ValueError("bad format")
         nonce = data[1 : 1 + NONCE_SIZE_BYTES]
-        return aes.decrypt(nonce, data[1 + NONCE_SIZE_BYTES :], aad).decode("utf-8")
+        return aes.decrypt(nonce, data[1 + NONCE_SIZE_BYTES :], _VERSION + (aad or b"")).decode(
+            "utf-8"
+        )
     except (InvalidTag, ValueError, binascii.Error, UnicodeError):
         raise DecryptionError("Unable to decrypt value.") from None
 
