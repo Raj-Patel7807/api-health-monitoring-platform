@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     # No default on purpose: a shared default key would defeat the encryption.
     encryption_key: str = ""
 
+    # JWT settings (US-01 — Sprint 2)
+    # Generate a secret: python -c "import secrets; print(secrets.token_hex(32))"
+    jwt_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
@@ -27,3 +34,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+

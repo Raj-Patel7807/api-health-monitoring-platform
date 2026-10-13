@@ -23,6 +23,9 @@ dev = [
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
   "ruff>=0.8,<1",
+  "pytest-asyncio>=0.24,<1",
+  "aiosqlite>=0.20,<1",
+  "email-validator>=2,<3",
 ]
 
 [tool.ruff]
@@ -49,3 +52,4 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
+asyncio_mode = "auto"
