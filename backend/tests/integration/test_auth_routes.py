@@ -54,9 +54,7 @@ async def _create_tables() -> AsyncGenerator[None, None]:
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client wired to the FastAPI app with a DB override."""
     app.dependency_overrides[get_db] = _override_get_db
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
 
@@ -170,9 +168,7 @@ async def test_refresh_returns_new_token_pair(client: AsyncClient) -> None:
     signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
     refresh_token = signup_resp.json()["refresh_token"]
 
-    resp = await client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": refresh_token}
-    )
+    resp = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
     assert resp.status_code == 200
     body = resp.json()
     assert "access_token" in body
@@ -185,9 +181,7 @@ async def test_refresh_with_access_token_returns_401(client: AsyncClient) -> Non
     signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
     access_token = signup_resp.json()["access_token"]
 
-    resp = await client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": access_token}
-    )
+    resp = await client.post("/api/v1/auth/refresh", json={"refresh_token": access_token})
     assert resp.status_code == 401
 
 
@@ -201,9 +195,7 @@ async def test_me_authenticated_returns_user_profile(client: AsyncClient) -> Non
     signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
     access_token = signup_resp.json()["access_token"]
 
-    resp = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {access_token}"}
-    )
+    resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {access_token}"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["email"] == "heidi@example.com"

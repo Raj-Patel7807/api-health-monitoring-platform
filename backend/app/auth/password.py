@@ -34,4 +34,3 @@ def verify_password(plain: str, hashed: str) -> bool:
         return bcrypt.checkpw(_prehash(plain), hashed.encode("utf-8"))
     except Exception:
         return False
-

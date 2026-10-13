@@ -11,10 +11,14 @@ dependencies = [
   "pydantic-settings>=2.7,<3",
   "psycopg[binary]>=3.2,<4",
   "redis>=5.2,<6",
-  "sqlalchemy>=2.0,<3",
+  "sqlalchemy[asyncio]>=2.0,<3",
   "uvicorn[standard]>=0.32,<1",
   "cryptography>=50.0.2",
   "httpx2>=2.13.1",
+  # Auth (US-01 — Sprint 2)
+  "python-jose[cryptography]>=3.3,<4",
+  "bcrypt>=4.0,<6",
+  "asyncpg>=0.29,<1",
 ]
 
 [dependency-groups]
@@ -48,8 +52,21 @@ disallow_untyped_decorators = false
 module = ["celery", "celery.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["jose", "jose.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["bcrypt"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["passlib", "passlib.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
 asyncio_mode = "auto"
+

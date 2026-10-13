@@ -1,7 +1,6 @@
 """Unit tests for app.auth.tokens — JWT creation and decoding."""
 
 from datetime import timedelta
-from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException

@@ -8,7 +8,7 @@ Both token types are signed HS256 using JWT_SECRET_KEY from settings.
 """
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
@@ -34,7 +34,14 @@ def _build_token(
     payload[_TOKEN_TYPE_CLAIM] = token_type
     payload["iat"] = _now_utc()
     payload["exp"] = _now_utc() + expires_delta
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return cast(
+        str,
+        jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
+        ),
+    )
 
 
 def create_access_token(
@@ -59,13 +66,20 @@ def _decode_raw(token: str) -> dict[str, Any]:
     """Decode and validate a JWT. Raises HTTPException 401 on any failure."""
     settings = get_settings()
     try:
-        return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        return cast(
+            dict[str, Any],
+            jwt.decode(
+                token,
+                settings.jwt_secret_key,
+                algorithms=[settings.jwt_algorithm],
+            ),
+        )
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token.",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
 
 
 def decode_access_token(token: str) -> dict[str, Any]:

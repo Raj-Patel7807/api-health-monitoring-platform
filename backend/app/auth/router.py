@@ -11,6 +11,7 @@ All routes are thin: validation lives in schemas, business logic stays here.
 """
 
 import logging
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -99,14 +100,14 @@ async def signup(
 
     try:
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as err:
         # Race condition: another request registered the same email between
         # our SELECT and INSERT.  Roll back and report the conflict.
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email address already exists.",
-        )
+        ) from err
 
     logger.info("New user registered: user_id=%s team_id=%s", user.id, team.id)
     return _make_token_pair(user)
@@ -125,8 +126,8 @@ async def login(
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
-    # Use a constant-time comparison even when the user is not found (passlib
-    # does this internally via dummy_verify).
+    # Deliberately return the same error for wrong email and wrong password
+    # to avoid leaking which part was incorrect (AC-01.4).
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -158,9 +159,7 @@ async def refresh(
     if not user_id_raw:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token.")
 
-    from uuid import UUID  # noqa: PLC0415 — local import to keep module top-level clean
-
-    result = await db.execute(select(User).where(User.id == UUID(str(user_id_raw))))
+    result = await db.execute(select(User).where(User.id == uuid.UUID(str(user_id_raw))))
     user = result.scalar_one_or_none()
 
     if user is None or not user.is_active:
