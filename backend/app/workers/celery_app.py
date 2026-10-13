@@ -15,5 +15,11 @@ celery_app.conf.task_routes = {
     "app.workers.tasks.run_health_check": {"queue": "monitoring"},
     "app.workers.tasks.dispatch_notification": {"queue": "notifications"},
     "app.workers.tasks.analyze_incident": {"queue": "ai"},
+    "app.workers.tasks.schedule_due_monitors": {"queue": "maintenance"},
 }
-celery_app.conf.beat_schedule = {}
+celery_app.conf.beat_schedule = {
+    "schedule-due-monitors-every-10s": {
+        "task": "app.workers.tasks.schedule_due_monitors",
+        "schedule": 10.0,
+    },
+}
