@@ -1,3 +1,9 @@
+import { Route, Routes } from "react-router-dom";
+
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { DashboardPage } from "./pages/DashboardPage";
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { HealthStatus } from "./components/HealthStatus";
 
 const STACK = [
@@ -39,7 +45,7 @@ const STACK = [
     },
 ];
 
-export function App() {
+function HomePage() {
     return (
         <div className="page-wrapper">
             {/* ── Header ──────────────────────────────────────────────── */}
@@ -153,5 +159,17 @@ export function App() {
                 </div>
             </footer>
         </div>
+    );
+}
+export function App() {
+    return (
+        <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+            </Route>
+        </Routes>
     );
 }
