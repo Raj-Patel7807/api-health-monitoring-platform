@@ -5,6 +5,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { HealthStatus } from "./components/HealthStatus";
+import { MonitorsPage } from "./pages/MonitorsPage";
+import { MonitorFormPage } from "./pages/MonitorFormPage";
 
 const STACK = [
     {
@@ -169,6 +171,12 @@ export function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/monitors" element={<MonitorsPage />} />
+                <Route path="/monitors/new" element={<MonitorFormPage />} />
+                <Route
+                    path="/monitors/:monitorId/edit"
+                    element={<MonitorFormPage />}
+                />
             </Route>
         </Routes>
     );
