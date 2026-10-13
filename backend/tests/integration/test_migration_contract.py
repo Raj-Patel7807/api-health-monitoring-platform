@@ -2,9 +2,14 @@
 
 import os
 
+import pytest
 from sqlalchemy import create_engine, text
 
 
+@pytest.mark.skipif(
+    "DATABASE_URL" not in os.environ,
+    reason="DATABASE_URL not set; requires disposable PostgreSQL integration environment",
+)
 def test_pgvector_extension_exists_in_database() -> None:
     """Integration CI runs Alembic before this test and provides DATABASE_URL."""
     database_url = os.environ["DATABASE_URL"]
