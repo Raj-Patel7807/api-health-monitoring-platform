@@ -10,6 +10,9 @@ def test_worker_routes_keep_monitoring_and_side_effects_separate() -> None:
         "queue": "notifications"
     }
     assert celery_app.conf.task_routes["app.workers.tasks.analyze_incident"] == {"queue": "ai"}
+    assert celery_app.conf.task_routes["app.workers.tasks.schedule_due_monitors"] == {
+        "queue": "maintenance"
+    }
 
 
 def test_foundation_tasks_do_not_call_external_services() -> None:

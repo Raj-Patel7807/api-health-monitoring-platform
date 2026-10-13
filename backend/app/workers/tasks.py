@@ -1,4 +1,13 @@
+from app.db.session import get_db_session
+from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.workers.celery_app import celery_app
+
+
+@celery_app.task(name="app.workers.tasks.schedule_due_monitors")
+def schedule_due_monitors() -> list[str]:
+    """Find monitors due for a check, queue run_health_check tasks, and update next_check_at."""
+    with get_db_session() as session:
+        return find_and_schedule_due_monitors(session)
 
 
 @celery_app.task(name="app.workers.tasks.run_health_check")
