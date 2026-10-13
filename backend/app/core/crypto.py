@@ -94,9 +94,9 @@ def decrypt(token: str, *, key: str | None = None, aad: bytes | None = None) -> 
         if data[:1] != _VERSION or len(data) < 1 + NONCE_SIZE_BYTES + 16:
             raise ValueError("bad format")
         nonce = data[1 : 1 + NONCE_SIZE_BYTES]
-        return aes.decrypt(
-            nonce, data[1 + NONCE_SIZE_BYTES :], _VERSION + (aad or b"")
-        ).decode("utf-8")
+        return aes.decrypt(nonce, data[1 + NONCE_SIZE_BYTES :], _VERSION + (aad or b"")).decode(
+            "utf-8"
+        )
     except (InvalidTag, ValueError, binascii.Error, UnicodeError):
         raise DecryptionError("Unable to decrypt value.") from None
 
