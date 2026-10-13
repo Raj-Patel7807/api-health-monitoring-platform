@@ -1,4 +1,3 @@
-
 """Database session helpers.
 
 - ``create_database_engine`` — synchronous engine used by Alembic migrations.
