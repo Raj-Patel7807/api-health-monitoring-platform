@@ -8,9 +8,9 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from app.core.crypto import (
-    CryptoError,
     KEY_SIZE_BYTES,
     NONCE_SIZE_BYTES,
+    CryptoError,
     DecryptionError,
     EncryptionConfigError,
     decrypt,
