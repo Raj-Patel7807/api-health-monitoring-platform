@@ -13,7 +13,7 @@ from app.modules.monitors.models import Monitor
 
 DEFAULT_USER_AGENT = "APIMonitor/1.0"
 MAX_BACKOFF_INTERVAL_SECONDS = 86400  # 24 hours (matches max interval in schemas.py)
-MIN_BACKOFF_INTERVAL_SECONDS = 10  # Matches DB schema check constraint (>= 10)
+MIN_BACKOFF_INTERVAL_SECONDS = 10  # Minimum interval between repeated probes
 MAX_EXPONENT = 20  # Prevent integer overflow on astronomical consecutive failure counts
 
 
@@ -51,11 +51,9 @@ def apply_failure_backoff(
     Uses monitor.check_interval_seconds as the base and monitor.consecutive_failures
     as the exponent. Calculates backoff_until in UTC.
     """
-    base_interval = (
-        monitor.check_interval_seconds
-        if monitor.check_interval_seconds >= MIN_BACKOFF_INTERVAL_SECONDS
-        else 60
-    )
+    # Do not silently replace a short configured interval with 60 seconds.
+    # calculate_exponential_backoff enforces the safety minimum.
+    base_interval = monitor.check_interval_seconds
     new_interval = calculate_exponential_backoff(
         base_interval_seconds=base_interval,
         consecutive_failures=monitor.consecutive_failures,
@@ -68,10 +66,17 @@ def apply_failure_backoff(
     return new_interval
 
 
-def reset_monitor_backoff(monitor: Monitor) -> None:
-    """Reset a recovered monitor to its normal configured interval and clear backoff."""
+def reset_monitor_backoff(monitor: Monitor, now: datetime | None = None) -> None:
+    """Restore the configured interval and schedule the next check after recovery.
+
+    The scheduler may have set next_check_at using the previous backoff interval
+    before this health check ran. Update it so recovery does not leave the
+    monitor waiting at the old, slower frequency.
+    """
+    current_time = now or datetime.now(UTC)
     monitor.current_interval_seconds = monitor.check_interval_seconds
     monitor.backoff_until = None
+    monitor.next_check_at = current_time + timedelta(seconds=monitor.check_interval_seconds)
 
 
 def update_monitor_backoff(
@@ -85,6 +90,6 @@ def update_monitor_backoff(
     - Failing: escalates current_interval_seconds and sets backoff_until window.
     """
     if is_healthy:
-        reset_monitor_backoff(monitor)
+        reset_monitor_backoff(monitor, now=now)
     else:
         apply_failure_backoff(monitor, now=now)
