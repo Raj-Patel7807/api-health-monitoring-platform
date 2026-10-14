@@ -24,6 +24,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
+from app.modules.monitors.backoff import DEFAULT_USER_AGENT, update_monitor_backoff
 from app.modules.monitors.models import Monitor
 
 logger = logging.getLogger(__name__)
@@ -247,12 +248,17 @@ def check_monitor_by_id(
             logger.info("Monitor %s is disabled — skipping check", monitor_id)
             return None
 
+        user_agent = (
+            monitor.user_agent.strip()
+            if monitor.user_agent and monitor.user_agent.strip()
+            else DEFAULT_USER_AGENT
+        )
         result = execute_http_check(
             url=monitor.url,
             method=monitor.method,
             expected_status_code=monitor.expected_status_code,
             timeout_seconds=monitor.timeout_seconds,
-            user_agent=monitor.user_agent or "APIMonitor/1.0",
+            user_agent=user_agent,
             monitor_id=str(monitor.id),
         )
 
@@ -279,11 +285,22 @@ def check_monitor_by_id(
             .values(**counters)
             .returning(Monitor.consecutive_failures, Monitor.consecutive_successes)
         ).one_or_none()
-        session.commit()
+
         if row is None:  # Disabled or deleted during the HTTP request.
+            session.commit()
             return None
 
         result.consecutive_failures, result.consecutive_successes = row
+
+        # Synchronize in-memory monitor state with the atomic database counters
+        # before calculating backoff to prevent using stale counts or overwriting.
+        monitor.consecutive_failures = result.consecutive_failures
+        monitor.consecutive_successes = result.consecutive_successes
+
+        # Update backoff state (current_interval_seconds and backoff_until)
+        update_monitor_backoff(monitor, is_healthy=(result.status == "healthy"))
+
+        session.commit()
         logger.info(
             "Monitor %s check complete: status=%s failures=%d successes=%d",
             monitor_id,
