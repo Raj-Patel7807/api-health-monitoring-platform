@@ -92,10 +92,7 @@ export function ConfirmDialog({
                     </svg>
                 </div>
 
-                <h2
-                    id="confirm-dialog-title"
-                    className="confirm-dialog-title"
-                >
+                <h2 id="confirm-dialog-title" className="confirm-dialog-title">
                     {title}
                 </h2>
 

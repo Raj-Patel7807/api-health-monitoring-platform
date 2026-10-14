@@ -87,7 +87,13 @@ export function MonitorDetailPage() {
 
     const [deleteOpen, setDeleteOpen] = useState(false);
 
-    const { data: monitor, isLoading, isError, error, refetch } = useQuery({
+    const {
+        data: monitor,
+        isLoading,
+        isError,
+        error,
+        refetch,
+    } = useQuery({
         queryKey: ["monitor", monitorId],
         queryFn: () => getMonitor(monitorId!),
         enabled: Boolean(monitorId),
@@ -149,10 +155,7 @@ export function MonitorDetailPage() {
                     ← Back to monitors
                 </Link>
                 <div className="monitors-card detail-card">
-                    <div
-                        role="alert"
-                        className="monitors-state-box"
-                    >
+                    <div role="alert" className="monitors-state-box">
                         <h2>
                             {is404
                                 ? "Monitor not found"
@@ -161,9 +164,9 @@ export function MonitorDetailPage() {
                         <p>
                             {is404
                                 ? "This monitor may have been deleted."
-                                : (error instanceof Error
-                                      ? error.message
-                                      : "Something went wrong.")}
+                                : error instanceof Error
+                                  ? error.message
+                                  : "Something went wrong."}
                         </p>
                         {is404 ? (
                             <Link
@@ -308,10 +311,7 @@ export function MonitorDetailPage() {
                         className="monitors-card detail-card"
                         aria-labelledby="counters-heading"
                     >
-                        <h2
-                            id="counters-heading"
-                            className="detail-card-title"
-                        >
+                        <h2 id="counters-heading" className="detail-card-title">
                             Failure &amp; recovery
                         </h2>
                         <div className="detail-counters">
@@ -354,8 +354,7 @@ export function MonitorDetailPage() {
                                     Consecutive successes
                                 </span>
                                 <span className="detail-counter-sub">
-                                    threshold:{" "}
-                                    {monitor.recovery_threshold ?? 2}
+                                    threshold: {monitor.recovery_threshold ?? 2}
                                 </span>
                             </div>
                         </div>

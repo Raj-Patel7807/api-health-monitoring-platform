@@ -210,9 +210,11 @@ body::before {
     transform: translateX(-50%);
     width: 40rem;
     height: 40rem;
-    background: radial-gradient(circle,
-            rgba(99, 179, 237, 0.08) 0%,
-            transparent 70%);
+    background: radial-gradient(
+        circle,
+        rgba(99, 179, 237, 0.08) 0%,
+        transparent 70%
+    );
     pointer-events: none;
 }
 
@@ -249,9 +251,11 @@ body::before {
     letter-spacing: -0.03em;
     line-height: 1.1;
     margin-bottom: var(--space-5);
-    background: linear-gradient(135deg,
-            var(--clr-text-primary) 40%,
-            var(--clr-accent));
+    background: linear-gradient(
+        135deg,
+        var(--clr-text-primary) 40%,
+        var(--clr-accent)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -486,9 +490,11 @@ body::before {
 
 .sprint-card.sprint--active {
     border-color: rgba(99, 179, 237, 0.3);
-    background: linear-gradient(135deg,
-            var(--clr-bg-surface),
-            var(--clr-bg-elevated));
+    background: linear-gradient(
+        135deg,
+        var(--clr-bg-surface),
+        var(--clr-bg-elevated)
+    );
     box-shadow:
         var(--shadow-card),
         0 0 24px rgba(99, 179, 237, 0.1),
@@ -660,7 +666,6 @@ body::before {
 }
 
 @keyframes pulse {
-
     0%,
     100% {
         opacity: 1;

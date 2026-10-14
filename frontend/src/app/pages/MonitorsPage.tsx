@@ -46,7 +46,8 @@ export function MonitorsPage() {
     // Derived after data is declared
     const pendingDeleteMonitor =
         pendingDeleteId !== null
-            ? (data?.items ?? []).find((m) => m.id === pendingDeleteId) ?? null
+            ? ((data?.items ?? []).find((m) => m.id === pendingDeleteId) ??
+              null)
             : null;
 
     useEffect(() => {
