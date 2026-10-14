@@ -537,9 +537,7 @@ class TestCheckMonitorById:
         assert base_monitor.consecutive_successes == 1
 
     # Skip soft-deleted monitor
-    def test_skips_soft_deleted_monitor(
-        self, db_session: Session, base_monitor: Monitor
-    ) -> None:
+    def test_skips_soft_deleted_monitor(self, db_session: Session, base_monitor: Monitor) -> None:
         base_monitor.deleted_at = datetime.now(UTC)
         db_session.add(base_monitor)
         db_session.commit()
@@ -548,9 +546,7 @@ class TestCheckMonitorById:
         assert result is None
 
     # Skip disabled monitor
-    def test_skips_disabled_monitor(
-        self, db_session: Session, base_monitor: Monitor
-    ) -> None:
+    def test_skips_disabled_monitor(self, db_session: Session, base_monitor: Monitor) -> None:
         base_monitor.enabled = False
         db_session.add(base_monitor)
         db_session.commit()
@@ -622,6 +618,7 @@ class TestCheckMonitorById:
         assert sent_headers["User-Agent"] == "APIMonitor/1.0"
 
         # Real-session path: no db_session injected, so get_db_session() is used
+
     def test_uses_get_db_session_when_none_injected(
         self, db_session: Session, base_monitor: Monitor
     ) -> None:
