@@ -10,13 +10,17 @@ Implements AC-06.1 through AC-06.6:
            an incident by itself (incident logic belongs to a later story).
 """
 
+import ipaddress
 import logging
+import socket
 import ssl
 import time
 from dataclasses import dataclass, field
+from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -55,6 +59,38 @@ class CheckResult:
 # ---------------------------------------------------------------------------
 
 
+def _is_public_target(url: str) -> bool:
+    """Reject private, local, and unresolvable destinations before making HTTP requests.
+
+    DNS must be checked for hostname targets, not just literal IP addresses.
+    This is defense in depth; production also needs outbound network restrictions
+    because a hostile DNS server can rebind between this lookup and connection.
+    """
+    try:
+        parsed = urlsplit(url)
+        host = parsed.hostname
+        if (
+            parsed.scheme not in ("http", "https")
+            or not host
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            return False
+        if host.lower() == "localhost" or host.lower().endswith((".localhost", ".local")):
+            return False
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        try:
+            return ipaddress.ip_address(host).is_global
+        except ValueError:
+            pass  # Domain name, not a literal IP address.
+        addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+        return bool(addresses) and all(
+            ipaddress.ip_address(info[4][0]).is_global for info in addresses
+        )
+    except (OSError, ValueError):
+        return False
+
+
 def execute_http_check(
     url: str,
     method: str,
@@ -84,8 +120,15 @@ def execute_http_check(
     headers = {"User-Agent": user_agent}
 
     start = time.perf_counter()
+    if not _is_public_target(url):
+        result.status = "failing"
+        result.connection_error = True
+        result.response_time_ms = int((time.perf_counter() - start) * 1000)
+        result.error_message = "Blocked unsafe or unresolvable monitoring target"
+        logger.warning("Monitor %s: blocked unsafe or unresolvable target", monitor_id)
+        return result
     try:
-        with httpx.Client(timeout=timeout_seconds, verify=True) as client:
+        with httpx.Client(timeout=timeout_seconds, verify=True, trust_env=False) as client:
             response = client.request(method, url, headers=headers)
 
         elapsed_ms = int((time.perf_counter() - start) * 1000)
@@ -132,8 +175,8 @@ def execute_http_check(
             result.error_message = f"Connection error: {exc}"
             logger.warning("Monitor %s: connection error — %s", monitor_id, exc)
 
-    # AC-06.4 — other network-level or protocol errors (e.g. remote disconnect, reset)
-    except (httpx.NetworkError, httpx.ProtocolError) as exc:
+    # AC-06.4 — remaining request errors, including proxy/protocol errors.
+    except httpx.RequestError as exc:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result.response_time_ms = elapsed_ms
         result.status = "failing"
@@ -213,19 +256,40 @@ def check_monitor_by_id(
             monitor_id=str(monitor.id),
         )
 
-        update_monitor_counters(monitor, result)
-        result.consecutive_failures = monitor.consecutive_failures
-        result.consecutive_successes = monitor.consecutive_successes
-
-        session.add(monitor)
+        # Atomic SQL arithmetic prevents overlapping Celery tasks from losing
+        # increments when both read the same old counter value.
+        counters = (
+            {
+                "consecutive_failures": 0,
+                "consecutive_successes": Monitor.consecutive_successes + 1,
+            }
+            if result.status == "healthy"
+            else {
+                "consecutive_failures": Monitor.consecutive_failures + 1,
+                "consecutive_successes": 0,
+            }
+        )
+        row = session.execute(
+            update(Monitor)
+            .where(
+                Monitor.id == monitor_uuid,
+                Monitor.enabled.is_(True),
+                Monitor.deleted_at.is_(None),
+            )
+            .values(**counters)
+            .returning(Monitor.consecutive_failures, Monitor.consecutive_successes)
+        ).one_or_none()
         session.commit()
+        if row is None:  # Disabled or deleted during the HTTP request.
+            return None
 
+        result.consecutive_failures, result.consecutive_successes = row
         logger.info(
             "Monitor %s check complete: status=%s failures=%d successes=%d",
             monitor_id,
             result.status,
-            monitor.consecutive_failures,
-            monitor.consecutive_successes,
+            result.consecutive_failures,
+            result.consecutive_successes,
         )
         return result
 
