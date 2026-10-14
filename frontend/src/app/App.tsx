@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -7,6 +7,7 @@ import { SignupPage } from "./pages/SignupPage";
 import { HealthStatus } from "./components/HealthStatus";
 import { MonitorsPage } from "./pages/MonitorsPage";
 import { MonitorFormPage } from "./pages/MonitorFormPage";
+import { MonitorDetailPage } from "./pages/MonitorDetailPage";
 
 const STACK = [
     {
@@ -63,7 +64,14 @@ function HomePage() {
                         </div>
                         <span className="logo-text">API Health Monitor</span>
                     </a>
-                    <span className="header-badge">Header</span>
+                    <nav className="header-auth-actions" aria-label="Account">
+                        <Link className="header-login-link" to="/login">
+                            Log in
+                        </Link>
+                        <Link className="header-signup-link" to="/signup">
+                            Sign up
+                        </Link>
+                    </nav>
                 </div>
             </header>
 
@@ -173,6 +181,10 @@ export function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/monitors" element={<MonitorsPage />} />
                 <Route path="/monitors/new" element={<MonitorFormPage />} />
+                <Route
+                    path="/monitors/:monitorId"
+                    element={<MonitorDetailPage />}
+                />
                 <Route
                     path="/monitors/:monitorId/edit"
                     element={<MonitorFormPage />}

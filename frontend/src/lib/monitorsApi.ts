@@ -239,3 +239,14 @@ export async function updateMonitor(
         body: JSON.stringify(partialPayload),
     });
 }
+
+/**
+ * Soft-deletes a monitor (sets deleted_at on the backend).
+ * Returns void because the API responds with 204 No Content.
+ * Role required: admin.
+ */
+export async function deleteMonitor(id: string): Promise<void> {
+    return request<void>(`/monitors/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+    });
+}

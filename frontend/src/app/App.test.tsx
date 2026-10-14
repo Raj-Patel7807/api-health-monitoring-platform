@@ -27,6 +27,18 @@ test("renders the main heading", () => {
     ).toBeInTheDocument();
 });
 
+test("shows login and signup links in the header", () => {
+    renderApp();
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
+        "href",
+        "/login",
+    );
+    expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute(
+        "href",
+        "/signup",
+    );
+});
+
 test("renders the stack section heading", () => {
     renderApp();
     expect(
