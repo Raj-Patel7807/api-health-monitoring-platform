@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { signup } from "../../lib/authApi";
+import { getAccessToken } from "../../lib/auth";
 import "./auth.css";
 
 export function SignupPage() {
@@ -9,6 +10,7 @@ export function SignupPage() {
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [teamName, setTeamName] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -17,8 +19,13 @@ export function SignupPage() {
         setError(null);
         setLoading(true);
         try {
-            await signup(fullName, email, password);
-            navigate("/login");
+            await signup(fullName, email, password, teamName || "My Team");
+            // API.md: 201 returns tokens — if they were saved go straight to monitors
+            if (getAccessToken()) {
+                navigate("/monitors");
+            } else {
+                navigate("/login");
+            }
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Something went wrong.",
@@ -77,6 +84,18 @@ export function SignupPage() {
                             }
                             required
                             minLength={8}
+                        />
+                    </div>
+                    <div className="auth-field">
+                        <label htmlFor="signup-team">Team name</label>
+                        <input
+                            id="signup-team"
+                            type="text"
+                            placeholder="My Team"
+                            value={teamName}
+                            onChange={(event) =>
+                                setTeamName(event.target.value)
+                            }
                         />
                     </div>
                     {error && (

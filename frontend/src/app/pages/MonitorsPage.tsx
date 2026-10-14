@@ -1,9 +1,17 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+    keepPreviousData,
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 
-import { listMonitors, ApiError } from "../../lib/monitorsApi";
+import { listMonitors, deleteMonitor, ApiError } from "../../lib/monitorsApi";
 import type { Monitor } from "../../lib/monitors";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ToastContainer } from "../components/Toast";
+import { useToast } from "../components/useToast";
 import "./monitors.css";
 
 function formatDateTime(isoString: string): string {
@@ -19,7 +27,12 @@ function formatDateTime(isoString: string): string {
 
 export function MonitorsPage() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { toasts, addToast, dismissToast } = useToast();
+
+    // ID of the monitor the user wants to delete (null = dialog closed)
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
     const rawPage = parseInt(searchParams.get("page") ?? "1", 10);
     const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
@@ -30,11 +43,36 @@ export function MonitorsPage() {
         placeholderData: keepPreviousData,
     });
 
+    // Derived after data is declared
+    const pendingDeleteMonitor =
+        pendingDeleteId !== null
+            ? ((data?.items ?? []).find((m) => m.id === pendingDeleteId) ??
+              null)
+            : null;
+
     useEffect(() => {
         if (error instanceof ApiError && error.status === 401) {
             navigate("/login", { replace: true });
         }
     }, [error, navigate]);
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => deleteMonitor(id),
+        onSuccess: async () => {
+            setPendingDeleteId(null);
+            await queryClient.invalidateQueries({ queryKey: ["monitors"] });
+            addToast("Monitor deleted successfully.", "success");
+        },
+        onError: (err) => {
+            setPendingDeleteId(null);
+            addToast(
+                err instanceof ApiError
+                    ? err.message
+                    : "Could not delete monitor. Please try again.",
+                "error",
+            );
+        },
+    });
 
     const total = data?.total ?? 0;
     const pageSize = data?.page_size ?? 20;
@@ -43,184 +81,230 @@ export function MonitorsPage() {
     const isEmpty = !isLoading && !isError && page === 1 && items.length === 0;
 
     return (
-        <main className="monitors-page">
-            <header className="monitors-header">
-                <div className="monitors-header-text">
-                    <h1>Monitors</h1>
-                    <p className="monitors-subtitle">
-                        The endpoints your team keeps an eye on.
-                    </p>
-                </div>
-                <Link
-                    to="/monitors/new"
-                    className="monitors-button monitors-button--primary"
-                >
-                    Add monitor
-                </Link>
-            </header>
-
-            <section className="monitors-card">
-                {isLoading && (
-                    <div
-                        role="status"
-                        className="monitors-state-box"
-                        aria-live="polite"
+        <>
+            <main className="monitors-page">
+                <header className="monitors-header">
+                    <div className="monitors-header-text">
+                        <h1>Monitors</h1>
+                        <p className="monitors-subtitle">
+                            The endpoints your team keeps an eye on.
+                        </p>
+                    </div>
+                    <Link
+                        to="/monitors/new"
+                        className="monitors-button monitors-button--primary"
+                        data-testid="add-monitor-btn"
                     >
-                        <span className="spinner" aria-hidden="true" />
-                        <p>Loading monitors...</p>
-                    </div>
-                )}
+                        Add monitor
+                    </Link>
+                </header>
 
-                {isError && (
-                    <div role="alert" className="monitors-state-box">
-                        <h2>Could not load monitors</h2>
-                        <p>
-                            {error instanceof Error
-                                ? error.message
-                                : "Something went wrong."}
-                        </p>
-                        <button
-                            type="button"
-                            className="monitors-button monitors-button--secondary"
-                            onClick={() => void refetch()}
+                <section className="monitors-card">
+                    {isLoading && (
+                        <div
+                            role="status"
+                            className="monitors-state-box"
+                            aria-live="polite"
                         >
-                            Try again
-                        </button>
-                    </div>
-                )}
-
-                {isEmpty && (
-                    <div className="monitors-state-box">
-                        <h2>No monitors yet</h2>
-                        <p>
-                            Start tracking your endpoints to detect downtime and
-                            incidents early.
-                        </p>
-                        <Link
-                            to="/monitors/new"
-                            className="monitors-button monitors-button--primary"
-                        >
-                            Add your first monitor
-                        </Link>
-                    </div>
-                )}
-
-                {!isLoading && !isError && !isEmpty && (
-                    <>
-                        <div className="monitors-table-container">
-                            <table className="monitors-table">
-                                <caption className="monitors-sr-only">
-                                    Monitors
-                                </caption>
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Name</th>
-                                        <th scope="col">Method</th>
-                                        <th scope="col">Status</th>
-                                        <th scope="col">Interval</th>
-                                        <th scope="col">Expected</th>
-                                        <th scope="col">Created</th>
-                                        <th scope="col">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {items.map((monitor) => (
-                                        <tr key={monitor.id}>
-                                            <td>
-                                                <div className="monitors-cell-name">
-                                                    <Link
-                                                        to={`/monitors/${monitor.id}`}
-                                                    >
-                                                        {monitor.name}
-                                                    </Link>
-                                                    <span className="monitors-url">
-                                                        {monitor.url}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="monitors-chip monitors-chip--method">
-                                                    {monitor.method}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    className={`monitors-chip ${
-                                                        monitor.enabled
-                                                            ? "monitors-chip--ok"
-                                                            : "monitors-chip--warning"
-                                                    }`}
-                                                >
-                                                    {monitor.enabled
-                                                        ? "Enabled"
-                                                        : "Paused"}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                Every{" "}
-                                                {monitor.check_interval_seconds}
-                                                s
-                                            </td>
-                                            <td>
-                                                {monitor.expected_status_code}
-                                            </td>
-                                            <td>
-                                                {formatDateTime(
-                                                    monitor.created_at,
-                                                )}
-                                            </td>
-                                            <td>
-                                                <Link
-                                                    to={`/monitors/${monitor.id}/edit`}
-                                                    className="monitors-edit-link"
-                                                    aria-label={`Edit ${monitor.name}`}
-                                                >
-                                                    Edit
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <span className="spinner" aria-hidden="true" />
+                            <p>Loading monitors...</p>
                         </div>
+                    )}
 
-                        <nav
-                            aria-label="Pagination"
-                            className="monitors-pagination"
-                        >
-                            <span className="monitors-pagination-info">
-                                Page {page} of {totalPages} · {total} monitors
-                            </span>
-                            <div className="monitors-pagination-actions">
-                                <button
-                                    type="button"
-                                    className="monitors-button monitors-button--secondary"
-                                    disabled={page <= 1}
-                                    onClick={() =>
-                                        setSearchParams({
-                                            page: String(page - 1),
-                                        })
-                                    }
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    type="button"
-                                    className="monitors-button monitors-button--secondary"
-                                    disabled={page >= totalPages}
-                                    onClick={() =>
-                                        setSearchParams({
-                                            page: String(page + 1),
-                                        })
-                                    }
-                                >
-                                    Next
-                                </button>
+                    {isError && (
+                        <div role="alert" className="monitors-state-box">
+                            <h2>Could not load monitors</h2>
+                            <p>
+                                {error instanceof Error
+                                    ? error.message
+                                    : "Something went wrong."}
+                            </p>
+                            <button
+                                type="button"
+                                className="monitors-button monitors-button--secondary"
+                                onClick={() => void refetch()}
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    )}
+
+                    {isEmpty && (
+                        <div className="monitors-state-box">
+                            <h2>No monitors yet</h2>
+                            <p>
+                                Start tracking your endpoints to detect downtime
+                                and incidents early.
+                            </p>
+                            <Link
+                                to="/monitors/new"
+                                className="monitors-button monitors-button--primary"
+                            >
+                                Add your first monitor
+                            </Link>
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && !isEmpty && (
+                        <>
+                            <div className="monitors-table-container">
+                                <table className="monitors-table">
+                                    <caption className="monitors-sr-only">
+                                        Monitors
+                                    </caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Method</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Interval</th>
+                                            <th scope="col">Expected</th>
+                                            <th scope="col">Created</th>
+                                            <th scope="col">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {items.map((monitor) => (
+                                            <tr key={monitor.id}>
+                                                <td>
+                                                    <div className="monitors-cell-name">
+                                                        <Link
+                                                            to={`/monitors/${monitor.id}`}
+                                                        >
+                                                            {monitor.name}
+                                                        </Link>
+                                                        <span className="monitors-url">
+                                                            {monitor.url}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className="monitors-chip monitors-chip--method">
+                                                        {monitor.method}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        className={`monitors-chip ${
+                                                            monitor.enabled
+                                                                ? "monitors-chip--ok"
+                                                                : "monitors-chip--warning"
+                                                        }`}
+                                                    >
+                                                        {monitor.enabled
+                                                            ? "Enabled"
+                                                            : "Paused"}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    Every{" "}
+                                                    {
+                                                        monitor.check_interval_seconds
+                                                    }
+                                                    s
+                                                </td>
+                                                <td>
+                                                    {
+                                                        monitor.expected_status_code
+                                                    }
+                                                </td>
+                                                <td>
+                                                    {formatDateTime(
+                                                        monitor.created_at,
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div className="monitors-actions-cell">
+                                                        <Link
+                                                            to={`/monitors/${monitor.id}/edit`}
+                                                            className="monitors-edit-link"
+                                                            aria-label={`Edit ${monitor.name}`}
+                                                        >
+                                                            Edit
+                                                        </Link>
+                                                        <button
+                                                            type="button"
+                                                            className="monitors-delete-btn"
+                                                            aria-label={`Delete ${monitor.name}`}
+                                                            onClick={() =>
+                                                                setPendingDeleteId(
+                                                                    monitor.id,
+                                                                )
+                                                            }
+                                                            data-testid={`delete-${monitor.id}`}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        </nav>
-                    </>
-                )}
-            </section>
-        </main>
+
+                            <nav
+                                aria-label="Pagination"
+                                className="monitors-pagination"
+                            >
+                                <span className="monitors-pagination-info">
+                                    Page {page} of {totalPages} · {total}{" "}
+                                    monitors
+                                </span>
+                                <div className="monitors-pagination-actions">
+                                    <button
+                                        type="button"
+                                        className="monitors-button monitors-button--secondary"
+                                        disabled={page <= 1}
+                                        onClick={() =>
+                                            setSearchParams({
+                                                page: String(page - 1),
+                                            })
+                                        }
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="monitors-button monitors-button--secondary"
+                                        disabled={page >= totalPages}
+                                        onClick={() =>
+                                            setSearchParams({
+                                                page: String(page + 1),
+                                            })
+                                        }
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </nav>
+                        </>
+                    )}
+                </section>
+            </main>
+
+            {/* Delete confirmation */}
+            <ConfirmDialog
+                open={pendingDeleteId !== null}
+                title="Delete monitor?"
+                description={
+                    pendingDeleteMonitor
+                        ? `"${pendingDeleteMonitor.name}" and all its history will be permanently removed. This cannot be undone.`
+                        : "This monitor will be permanently removed."
+                }
+                confirmLabel="Delete monitor"
+                confirmingLabel="Deleting…"
+                isConfirming={deleteMutation.isPending}
+                onConfirm={() => {
+                    if (pendingDeleteId) {
+                        void deleteMutation.mutateAsync(pendingDeleteId);
+                    }
+                }}
+                onCancel={() => setPendingDeleteId(null)}
+            />
+
+            {/* Toast notifications */}
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        </>
     );
 }

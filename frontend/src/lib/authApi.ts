@@ -2,9 +2,9 @@ import { saveTokens, getRefreshToken, clearTokens } from "./auth";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-const SIGNUP_PATH = "/auth/signup";
-const LOGIN_PATH = "/auth/login";
-const REFRESH_PATH = "/auth/refresh";
+const SIGNUP_PATH = "/api/v1/auth/signup";
+const LOGIN_PATH = "/api/v1/auth/login";
+const REFRESH_PATH = "/api/v1/auth/refresh";
 
 type TokenResponse = {
     access_token: string;
@@ -23,14 +23,28 @@ export async function signup(
     fullName: string,
     email: string,
     password: string,
+    teamName: string = "My Team",
 ): Promise<void> {
     const response = await postJson(SIGNUP_PATH, {
         full_name: fullName,
         email,
         password,
+        team_name: teamName,
     });
     if (!response.ok) {
         throw new Error("Signup failed. Please check your details.");
+    }
+    // API.md: 201 returns { user, team, access_token, refresh_token }
+    try {
+        const data = (await response.json()) as TokenResponse & {
+            user?: unknown;
+            team?: unknown;
+        };
+        if (data.access_token) {
+            saveTokens(data.access_token, data.refresh_token ?? null);
+        }
+    } catch {
+        // If the body isn't JSON (e.g. mock server), silently continue
     }
 }
 

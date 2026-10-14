@@ -179,6 +179,12 @@
     word-break: break-all;
 }
 
+.monitors-actions-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
 .monitors-edit-link {
     color: var(--clr-accent);
     text-decoration: none;
@@ -186,6 +192,23 @@
 }
 
 .monitors-edit-link:hover {
+    text-decoration: underline;
+}
+
+.monitors-delete-btn {
+    background: none;
+    border: none;
+    color: var(--clr-red);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.monitors-delete-btn:hover {
+    opacity: 0.75;
     text-decoration: underline;
 }
 
