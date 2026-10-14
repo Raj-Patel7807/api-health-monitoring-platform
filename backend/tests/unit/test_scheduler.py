@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -14,7 +15,7 @@ from app.workers.tasks import schedule_due_monitors
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Generator[Session, None, None]:
     """Create an isolated in-memory SQLite database session for unit tests."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)

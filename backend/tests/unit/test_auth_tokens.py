@@ -1,5 +1,6 @@
 """Unit tests for app.auth.tokens — JWT creation and decoding."""
 
+from collections.abc import Generator
 from datetime import timedelta
 
 import pytest
@@ -18,7 +19,7 @@ _TEST_ALGO = "HS256"
 
 
 @pytest.fixture(autouse=True)
-def _patch_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+def _patch_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Override settings so tokens use a known key without touching .env."""
     from app.core import config as cfg
 

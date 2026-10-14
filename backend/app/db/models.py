@@ -19,12 +19,9 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
-class Base(DeclarativeBase):
-    pass
-
+from app.db.base import Base
 
 # ---------------------------------------------------------------------------
 # Enum mirrors (must match the PostgreSQL CREATE TYPE definitions)
