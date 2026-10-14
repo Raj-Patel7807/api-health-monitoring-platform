@@ -1,3 +1,5 @@
+import logging
+
 from celery import Task
 from kombu.exceptions import (  # type: ignore[import-untyped]
     OperationalError as BrokerOperationalError,
@@ -8,6 +10,8 @@ from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 from app.db.session import get_db_session
 from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.workers.celery_app import celery_app
+
+logger = logging.getLogger(__name__)
 
 
 @celery_app.task(
@@ -40,14 +44,24 @@ def schedule_due_monitors(self: Task) -> list[str]:
     name="app.workers.tasks.run_health_check",
     acks_late=True,
     reject_on_worker_lost=True,
+    max_retries=3,
 )
 def run_health_check(self: Task, monitor_id: str) -> str:
-    """Reserve the monitoring queue contract; monitor logic is a later feature.
+    """Execute a health check for the given monitor.
 
+    Classifies timeout, wrong status, connection error, and SSL failure.
+    Retries up to 3 times on unexpected worker errors, not on check failures.
     Configured with late acknowledgment and reject-on-worker-lost so a worker crash
     causes the unacknowledged task to be safely requeued.
     """
-    return monitor_id
+    from app.modules.monitors.checker import check_monitor_by_id
+
+    try:
+        check_monitor_by_id(monitor_id)
+        return monitor_id
+    except Exception as exc:
+        logger.exception("Unexpected error running health check for monitor %s", monitor_id)
+        raise self.retry(exc=exc, countdown=5) from exc
 
 
 @celery_app.task(
