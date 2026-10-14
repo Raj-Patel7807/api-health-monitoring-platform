@@ -338,3 +338,140 @@ def test_datetime_utc_bind_param_naive() -> None:
     result = type_dec.process_bind_param(naive_dt, None)
     assert result is not None
     assert result.tzinfo == UTC
+
+
+def test_restart_does_not_lose_future_schedule(db_session: Session) -> None:
+    """Verify that restarting the scheduler/worker preserves all scheduled future checks."""
+    now = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
+    future_time = now + timedelta(seconds=120)
+    monitor_id = uuid4()
+    monitor = Monitor(
+        id=monitor_id,
+        team_id=uuid4(),
+        name="API Monitor",
+        url="https://api.example.com/health",
+        enabled=True,
+        check_interval_seconds=60,
+        current_interval_seconds=60,
+        next_check_at=future_time,
+    )
+    db_session.add(monitor)
+    db_session.commit()
+
+    # Simulate worker/beat process restart: closing session, re-opening new session
+    engine = db_session.get_bind()
+    db_session.close()
+
+    # New session after restart
+    new_session = Session(engine)
+    try:
+        persisted = new_session.get(Monitor, monitor_id)
+        assert persisted is not None
+        assert persisted.next_check_at == future_time
+
+        # Running scheduler tick after restart at 'now'
+        dispatched: list[str] = []
+        result = find_and_schedule_due_monitors(
+            session=new_session,
+            now=now,
+            task_dispatcher=dispatched.append,
+        )
+        assert result == []
+        assert dispatched == []
+
+        # Future schedule is completely preserved
+        new_session.refresh(persisted)
+        assert persisted.next_check_at == future_time
+    finally:
+        new_session.close()
+
+
+def test_restart_catches_up_due_monitors_missed_during_downtime(db_session: Session) -> None:
+    """Verify that after a downtime / crash, scheduler restart immediately detects and
+    runs missed checks.
+    """
+    shutdown_time = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
+    m1_due = shutdown_time + timedelta(seconds=30)
+    m2_due = shutdown_time + timedelta(seconds=60)
+    m1_id = uuid4()
+    m2_id = uuid4()
+
+    monitor1 = Monitor(
+        id=m1_id,
+        team_id=uuid4(),
+        name="Monitor 1",
+        url="https://api1.example.com/health",
+        enabled=True,
+        check_interval_seconds=60,
+        current_interval_seconds=60,
+        next_check_at=m1_due,
+    )
+    monitor2 = Monitor(
+        id=m2_id,
+        team_id=uuid4(),
+        name="Monitor 2",
+        url="https://api2.example.com/health",
+        enabled=True,
+        check_interval_seconds=30,
+        current_interval_seconds=30,
+        next_check_at=m2_due,
+    )
+    db_session.add_all([monitor1, monitor2])
+    db_session.commit()
+
+    # Worker and Beat crash/stop for 10 minutes (600 seconds)
+    restart_time = shutdown_time + timedelta(seconds=600)
+
+    # Simulate process restart
+    engine = db_session.get_bind()
+    db_session.close()
+    restart_session = Session(engine)
+    try:
+        dispatched: list[str] = []
+        result = find_and_schedule_due_monitors(
+            session=restart_session,
+            now=restart_time,
+            task_dispatcher=dispatched.append,
+        )
+
+        # Both missed monitors must be scheduled immediately
+        assert set(result) == {str(m1_id), str(m2_id)}
+        assert set(dispatched) == {str(m1_id), str(m2_id)}
+
+        # Both monitors have advanced their schedule forward from restart_time
+        reloaded1 = restart_session.get(Monitor, m1_id)
+        reloaded2 = restart_session.get(Monitor, m2_id)
+        assert reloaded1 is not None and reloaded2 is not None
+        assert reloaded1.next_check_at == restart_time + timedelta(seconds=60)
+        assert reloaded2.next_check_at == restart_time + timedelta(seconds=30)
+    finally:
+        restart_session.close()
+
+
+def test_restart_picks_up_new_monitors_added_during_downtime(db_session: Session) -> None:
+    """Verify that newly created monitors with next_check_at=None are scheduled after restart."""
+    restart_time = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
+    new_monitor = Monitor(
+        id=uuid4(),
+        team_id=uuid4(),
+        name="Newly Added Monitor",
+        url="https://new.example.com/health",
+        enabled=True,
+        check_interval_seconds=45,
+        current_interval_seconds=45,
+        next_check_at=None,
+    )
+    db_session.add(new_monitor)
+    db_session.commit()
+
+    dispatched: list[str] = []
+    result = find_and_schedule_due_monitors(
+        session=db_session,
+        now=restart_time,
+        task_dispatcher=dispatched.append,
+    )
+
+    assert result == [str(new_monitor.id)]
+    assert dispatched == [str(new_monitor.id)]
+    db_session.refresh(new_monitor)
+    assert new_monitor.next_check_at == restart_time + timedelta(seconds=45)
