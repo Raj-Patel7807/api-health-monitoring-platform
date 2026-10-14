@@ -12,6 +12,7 @@ All HTTP calls are mocked — no real network traffic, no real DB required.
 The in-memory SQLite engine is re-used from the existing scheduler test pattern.
 """
 
+import socket
 import ssl
 from collections.abc import Generator
 from datetime import UTC, datetime
@@ -42,6 +43,17 @@ EXPECTED_STATUS = 200
 TIMEOUT_SECONDS = 10
 USER_AGENT = "APIMonitor/1.0"
 MONITOR_ID = str(uuid4())
+
+
+@pytest.fixture(autouse=True)
+def _fake_public_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep mocked HTTP tests independent of external DNS/network access."""
+    monkeypatch.setattr(
+        "app.modules.monitors.checker.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
+        ],
+    )
 
 
 @pytest.fixture()
@@ -311,7 +323,7 @@ class TestExecuteHttpCheck:
             ctx.request.return_value = _fake_response(200)
             execute_http_check(MONITOR_URL, "GET", 200, 7, USER_AGENT, MONITOR_ID)
 
-        mock_cls.assert_called_once_with(timeout=7, verify=True)
+        mock_cls.assert_called_once_with(timeout=7, verify=True, trust_env=False)
 
     # AC-06.5 — SSL failures have a distinguishable message
     def test_ssl_error_message_is_prefixed(self) -> None:
@@ -635,3 +647,65 @@ class TestCheckMonitorById:
         assert result is not None
         assert result.status == "healthy"
         mock_get.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://localhost/private",
+        "http://127.0.0.1:8000/health",
+        "http://10.0.0.1/internal",
+        "http://[::1]/",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://user:pass@api.example.com/",
+    ],
+)
+def test_unsafe_targets_never_make_http_request(url: str) -> None:
+    with patch("app.modules.monitors.checker.httpx.Client") as client:
+        result = execute_http_check(url, "GET", 200, 10, USER_AGENT, MONITOR_ID)
+    assert result.status == "failing"
+    assert result.connection_error is True
+    client.assert_not_called()
+
+
+def test_domain_resolving_to_private_address_is_blocked() -> None:
+    with (
+        patch(
+            "app.modules.monitors.checker.socket.getaddrinfo",
+            return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.20.30.40", 443))],
+        ),
+        patch("app.modules.monitors.checker.httpx.Client") as client,
+    ):
+        result = execute_http_check(MONITOR_URL, "GET", 200, 10, USER_AGENT, MONITOR_ID)
+    assert result.connection_error is True
+    client.assert_not_called()
+
+
+def test_proxy_error_is_classified_as_connection_failure() -> None:
+    with patch("app.modules.monitors.checker.httpx.Client") as cls:
+        cls.return_value.__enter__.return_value.request.side_effect = httpx.ProxyError(
+            "Proxy connection failed"
+        )
+        result = execute_http_check(MONITOR_URL, "GET", 200, 10, USER_AGENT, MONITOR_ID)
+    assert result.status == "failing"
+    assert result.connection_error is True
+
+
+def test_overlapping_checks_do_not_lose_failure_increments(
+    db_session: Session, base_monitor: Monitor
+) -> None:
+    other_session = Session(db_session.get_bind())
+    try:
+        stale = other_session.get(Monitor, base_monitor.id)
+        assert stale is not None
+        assert stale.consecutive_failures == 0
+        with patch("app.modules.monitors.checker.httpx.Client") as cls:
+            cls.return_value.__enter__.return_value.request.return_value = _fake_response(500)
+            first = check_monitor_by_id(str(base_monitor.id), db_session=db_session)
+            second = check_monitor_by_id(str(base_monitor.id), db_session=other_session)
+        assert first is not None and first.consecutive_failures == 1
+        assert second is not None and second.consecutive_failures == 2
+        db_session.refresh(base_monitor)
+        assert base_monitor.consecutive_failures == 2
+    finally:
+        other_session.close()

@@ -1,5 +1,6 @@
 """Unit tests for exponential backoff, recovery, and User-Agent header (US-16)."""
 
+import socket
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 from uuid import uuid4
@@ -25,6 +26,17 @@ from app.modules.monitors.checker import (
 )
 from app.modules.monitors.models import Monitor
 from app.modules.monitors.scheduler import find_and_schedule_due_monitors
+
+
+@pytest.fixture(autouse=True)
+def _fake_public_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep mocked HTTP tests independent of external DNS/network access."""
+    monkeypatch.setattr(
+        "app.modules.monitors.checker.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
+        ],
+    )
 
 
 @pytest.fixture
@@ -345,3 +357,36 @@ def test_scheduler_respects_active_backoff_and_schedules_after_expiration(
     in_memory_db.refresh(sample_monitor)
     # next_check_at should be advanced using current_interval_seconds (240s)
     assert sample_monitor.next_check_at == now + timedelta(seconds=240)
+
+
+def test_overlapping_checks_calculate_backoff_from_atomic_counter(
+    in_memory_db: Session, sample_monitor: Monitor
+) -> None:
+    """Overlapping checks that increment failures atomically also calculate
+    the correct escalated backoff interval without using stale in-memory state.
+    """
+    other_session = Session(in_memory_db.get_bind())
+    try:
+        stale = other_session.get(Monitor, sample_monitor.id)
+        assert stale is not None
+        assert stale.consecutive_failures == 0
+
+        with patch(
+            "httpx.Client.request",
+            return_value=httpx.Response(
+                status_code=500, request=httpx.Request("GET", sample_monitor.url)
+            ),
+        ):
+            first = check_monitor_by_id(str(sample_monitor.id), db_session=in_memory_db)
+            second = check_monitor_by_id(str(sample_monitor.id), db_session=other_session)
+
+        assert first is not None and first.consecutive_failures == 1
+        assert second is not None and second.consecutive_failures == 2
+
+        in_memory_db.refresh(sample_monitor)
+        assert sample_monitor.consecutive_failures == 2
+        # Backoff interval must reflect failure 2 (240s), not stale failure 1 (120s)
+        assert sample_monitor.current_interval_seconds == 240
+        assert sample_monitor.backoff_until is not None
+    finally:
+        other_session.close()
