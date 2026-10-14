@@ -20,6 +20,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
+from app.modules.monitors.backoff import DEFAULT_USER_AGENT, update_monitor_backoff
 from app.modules.monitors.models import Monitor
 
 logger = logging.getLogger(__name__)
@@ -204,16 +205,22 @@ def check_monitor_by_id(
             logger.info("Monitor %s is disabled — skipping check", monitor_id)
             return None
 
+        user_agent = (
+            monitor.user_agent.strip()
+            if monitor.user_agent and monitor.user_agent.strip()
+            else DEFAULT_USER_AGENT
+        )
         result = execute_http_check(
             url=monitor.url,
             method=monitor.method,
             expected_status_code=monitor.expected_status_code,
             timeout_seconds=monitor.timeout_seconds,
-            user_agent=monitor.user_agent or "APIMonitor/1.0",
+            user_agent=user_agent,
             monitor_id=str(monitor.id),
         )
 
         update_monitor_counters(monitor, result)
+        update_monitor_backoff(monitor, is_healthy=(result.status == "healthy"))
         result.consecutive_failures = monitor.consecutive_failures
         result.consecutive_successes = monitor.consecutive_successes
 
