@@ -63,7 +63,7 @@ def test_foundation_tasks_do_not_call_external_services() -> None:
 def test_task_retry_and_crash_settings_on_tasks() -> None:
     # schedule_due_monitors retry policy
     assert schedule_due_monitors.max_retries == 3
-    assert schedule_due_monitors.retry_backoff is True
+    assert schedule_due_monitors.retry_backoff == 5
     assert schedule_due_monitors.retry_jitter is True
 
     # run_health_check crash resilience
@@ -143,9 +143,10 @@ def test_task_failure_recording_and_retrieval() -> None:
     assert rec.task_id == "task-123"
     assert rec.task_name == "app.workers.tasks.run_health_check"
     assert rec.exception_type == "ValueError"
-    assert rec.exception_message == "Test job crash"
-    assert rec.args == ["monitor-456"]
+    assert rec.exception_message == "[REDACTED]"
+    assert rec.args == ["[REDACTED]"]
     assert rec.kwargs == {"token": "[REDACTED]"}
+    assert rec.traceback is None
     assert rec.worker == "celery@worker-1"
     assert rec.retries == 2
     assert rec.failed_at == now
@@ -272,3 +273,89 @@ def test_handle_task_retry_logs_warning(caplog: pytest.LogCaptureFixture) -> Non
         "Celery task retrying: app.workers.tasks.dispatch_notification[retry-task-1]" in caplog.text
     )
     assert "attempt=2 max_retries=3" in caplog.text
+
+
+def test_scheduler_uses_exponential_retry_countdown(monkeypatch: pytest.MonkeyPatch) -> None:
+    from unittest.mock import patch
+
+    monkeypatch.setattr(
+        "app.workers.tasks.get_db_session",
+        MagicMock(side_effect=ConnectionRefusedError("Database unavailable")),
+    )
+    # Mock the exponential backoff calculator, and verify its result is passed
+    # into Celery retry. The original code retried at a constant five seconds.
+    with (
+        patch("celery.app.autoretry.get_exponential_backoff_interval", return_value=10) as backoff,
+        patch.object(schedule_due_monitors, "retry", side_effect=RuntimeError("Retried!")) as retry,
+        pytest.raises(RuntimeError, match="Retried!"),
+    ):
+        schedule_due_monitors.apply(throw=True)
+
+    assert backoff.call_args.kwargs["factor"] == 5
+    assert backoff.call_args.kwargs["maximum"] == 60
+    assert backoff.call_args.kwargs["full_jitter"] is True
+    assert retry.call_args.kwargs["countdown"] == 10
+
+
+def test_sensitive_failure_details_never_enter_custom_logs(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    tracker = TaskFailureTracker()
+    secret = "private-token-should-never-be-logged"
+    with caplog.at_level(logging.ERROR):
+        record = tracker.record_failure(
+            task_id="sensitive-failure-1",
+            task_name="app.workers.tasks.run_health_check",
+            exception=RuntimeError(f"authentication token: {secret}"),
+            args=[secret],
+            kwargs={"notes": secret, "password": secret},
+            traceback=f"Traceback containing {secret}",
+        )
+    assert record.exception_type == "RuntimeError"
+    assert record.exception_message == "[REDACTED]"
+    assert record.args == ["[REDACTED]"]
+    assert record.kwargs == {"notes": "[REDACTED]", "password": "[REDACTED]"}
+    assert record.traceback is None
+    assert secret not in str(record.to_dict())
+    assert secret not in caplog.text
+
+
+def test_retry_signal_never_logs_sensitive_reason(caplog: pytest.LogCaptureFixture) -> None:
+    sender = MagicMock()
+    sender.name = "app.workers.tasks.schedule_due_monitors"
+    sender.request.retries = 1
+    sender.max_retries = 3
+    secret = "private-token-should-never-be-logged"
+    with caplog.at_level(logging.WARNING):
+        handle_task_retry(
+            sender=sender,
+            task_id="retry-safe-1",
+            reason=RuntimeError(f"credential={secret}"),
+        )
+    assert "reason_type=RuntimeError" in caplog.text
+    assert secret not in caplog.text
+
+
+def test_failure_signal_redacts_traceback_and_unknown_parameter_values(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    secret = "private-token-should-never-be-logged"
+    sender = MagicMock()
+    sender.name = "app.workers.tasks.run_health_check"
+    sender.request.retries = 2
+    sender.request.hostname = "celery@test-worker"
+    with caplog.at_level(logging.ERROR):
+        handle_task_failure(
+            sender=sender,
+            task_id="failure-safe-1",
+            exception=RuntimeError(f"secret={secret}"),
+            args=(secret,),
+            kwargs={"notes": secret},
+            einfo=f"sensitive traceback: {secret}",
+        )
+    record = get_failed_task("failure-safe-1")
+    assert record is not None
+    assert record.traceback is None
+    assert record.exception_message == "[REDACTED]"
+    assert secret not in str(record.to_dict())
+    assert secret not in caplog.text

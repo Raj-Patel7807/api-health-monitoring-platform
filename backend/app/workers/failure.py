@@ -72,10 +72,10 @@ class FailedTaskRecord:
 
 
 class TaskFailureTracker:
-    """In-memory thread-safe registry of recorded task failures.
+    """Process-local, bounded diagnostic record of failed tasks.
 
-    Retains the most recent task failures (up to max_entries) for operational
-    inspection, health diagnostics, and testing.
+    Records are not durable across worker restarts. Configure persistent
+    operational log collection for investigating past task failures.
     """
 
     def __init__(self, max_entries: int = 200) -> None:
@@ -95,17 +95,20 @@ class TaskFailureTracker:
         retries: int = 0,
         now: datetime | None = None,
     ) -> FailedTaskRecord:
-        """Record and log a failed Celery task execution."""
-        clean_args = sanitize_payload(args or [])
-        clean_kwargs = sanitize_payload(kwargs or {})
+        """Record safe diagnostics without persisting untrusted exception text.
+
+        Exception messages, tracebacks, and arbitrary task parameters can contain
+        access tokens or credentials even when their keys look harmless. Preserve
+        the exception type and task metadata while omitting those raw values.
+        """
         record = FailedTaskRecord(
             task_id=task_id,
             task_name=task_name,
             exception_type=type(exception).__name__,
-            exception_message=str(exception),
-            args=clean_args if isinstance(clean_args, list) else list(clean_args),
-            kwargs=clean_kwargs if isinstance(clean_kwargs, dict) else {},
-            traceback=traceback,
+            exception_message="[REDACTED]",
+            args=["[REDACTED]"] * len(args or []),
+            kwargs={str(key): "[REDACTED]" for key in (kwargs or {})},
+            traceback=None,
             worker=worker,
             retries=retries,
             failed_at=now or datetime.now(UTC),
@@ -121,16 +124,14 @@ class TaskFailureTracker:
         self._order.append(task_id)
 
         logger.error(
-            "Recorded failed worker task %s[%s]: %s (%s)",
+            "Recorded failed worker task %s[%s]: %s",
             task_name,
             task_id,
             record.exception_type,
-            record.exception_message,
             extra={
                 "task_id": task_id,
                 "task_name": task_name,
                 "exception_type": record.exception_type,
-                "exception_message": record.exception_message,
                 "retries": retries,
                 "worker": worker,
             },

@@ -1,40 +1,36 @@
-import logging
-
 from celery import Task
+from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
+from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 
 from app.db.session import get_db_session
 from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.workers.celery_app import celery_app
-
-logger = logging.getLogger(__name__)
 
 
 @celery_app.task(
     bind=True,
     name="app.workers.tasks.schedule_due_monitors",
     max_retries=3,
-    default_retry_delay=5,
-    retry_backoff=True,
+    autoretry_for=(
+        DatabaseOperationalError,
+        BrokerOperationalError,
+        RedisConnectionError,
+        ConnectionError,
+        TimeoutError,
+    ),
+    retry_backoff=5,
+    retry_backoff_max=60,
     retry_jitter=True,
 )
 def schedule_due_monitors(self: Task) -> list[str]:
-    """Find monitors due for a check, queue run_health_check tasks, and update next_check_at.
+    """Find due monitors and dispatch them with automatic exponential retries.
 
-    Retries with backoff on database or operational failure.
-    Schedule state is persistently stored in PostgreSQL (monitors.next_check_at),
-    ensuring worker crashes or scheduler restarts do not lose the schedule.
+    Celery handles retry countdown, jitter, and logging through task signals.
+    Scheduled timestamps remain in PostgreSQL across worker restarts.
     """
-    try:
-        with get_db_session() as session:
-            return find_and_schedule_due_monitors(session)
-    except Exception as exc:
-        logger.error(
-            "schedule_due_monitors failed on attempt %d: %s",
-            self.request.retries + 1,
-            exc,
-            exc_info=True,
-        )
-        raise self.retry(exc=exc) from exc
+    with get_db_session() as session:
+        return find_and_schedule_due_monitors(session)
 
 
 @celery_app.task(

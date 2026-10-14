@@ -30,7 +30,6 @@ def handle_task_failure(
         return
 
     task_name = getattr(sender, "name", str(sender)) if sender else "unknown_task"
-    tb_str = str(einfo) if einfo else (str(traceback) if traceback else None)
     retries = getattr(sender.request, "retries", 0) if hasattr(sender, "request") else 0
     worker = getattr(sender.request, "hostname", None) if hasattr(sender, "request") else None
 
@@ -40,7 +39,6 @@ def handle_task_failure(
         exception=exception,
         args=list(args) if args else [],
         kwargs=kwargs or {},
-        traceback=tb_str,
         worker=worker,
         retries=retries,
     )
@@ -60,18 +58,17 @@ def handle_task_retry(
     max_retries = getattr(sender, "max_retries", None)
 
     logger.warning(
-        "Celery task retrying: %s[%s] attempt=%s max_retries=%s reason=%s",
+        "Celery task retrying: %s[%s] attempt=%s max_retries=%s reason_type=%s",
         task_name,
         task_id,
         retries,
         max_retries,
-        reason,
+        type(reason).__name__ if reason else None,
         extra={
             "task_id": task_id,
             "task_name": task_name,
             "retries": retries,
             "max_retries": max_retries,
             "exception_type": type(reason).__name__ if reason else None,
-            "exception_message": str(reason) if reason else None,
         },
     )
