@@ -1,5 +1,7 @@
 from celery import Task
-from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
+from kombu.exceptions import (  # type: ignore[import-untyped]
+    OperationalError as BrokerOperationalError,
+)
 from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 
