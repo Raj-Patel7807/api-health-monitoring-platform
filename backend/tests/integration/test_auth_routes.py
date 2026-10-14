@@ -10,14 +10,14 @@ Coverage:
     GET  /api/v1/auth/me        — authenticated (200), no Authorization header (403)
 """
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.db.models import Base
+from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 
@@ -67,7 +67,7 @@ _TEST_SECRET = "integration-test-secret-long-enough-for-hs256"
 
 
 @pytest.fixture(autouse=True)
-def _patch_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+def _patch_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     from app.core import config as cfg
 
     cfg.get_settings.cache_clear()
