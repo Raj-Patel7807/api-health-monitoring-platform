@@ -1,10 +1,21 @@
+import enum
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, Integer, String, Text, Uuid
+from sqlalchemy import Boolean, Enum, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, DateTimeUTC
+
+
+class HttpMethod(enum.StrEnum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+    HEAD = "HEAD"
+    OPTIONS = "OPTIONS"
 
 
 class Monitor(Base):
@@ -16,7 +27,11 @@ class Monitor(Base):
     team_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
-    method: Mapped[str] = mapped_column(String(10), default="GET", nullable=False)
+    method: Mapped[str] = mapped_column(
+        Enum(HttpMethod, name="http_method", create_type=False),
+        default=HttpMethod.GET,
+        nullable=False,
+    )
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     check_interval_seconds: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     current_interval_seconds: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
@@ -32,5 +47,12 @@ class Monitor(Base):
     )
     next_check_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
-    created_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, default=None, nullable=True)
-    updated_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTimeUTC, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTimeUTC,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
