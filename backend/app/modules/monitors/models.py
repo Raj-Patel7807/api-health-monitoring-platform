@@ -29,18 +29,12 @@ class Monitor(Base):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     method: Mapped[str] = mapped_column(
         Enum(
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE",
-            "HEAD",
-            "OPTIONS",
+            HttpMethod,
             name="http_method",
             create_type=False,
-            values_callable=lambda obj: [e.value if hasattr(e, "value") else str(e) for e in obj],
+            values_callable=lambda obj: [e.value for e in obj],
         ),
-        default="GET",
+        default=HttpMethod.GET.value,
         nullable=False,
     )
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

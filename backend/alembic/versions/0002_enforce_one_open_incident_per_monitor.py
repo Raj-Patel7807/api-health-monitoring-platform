@@ -1,16 +1,18 @@
 """enforce_one_open_incident_per_monitor
 
-Revision ID: 50f4c1e916b0
+Revision ID: 0002
 Revises: 0001
 Create Date: 2026-11-01 04:58:25.548165
 """
 
+from collections.abc import Sequence
+
 from alembic import op
 
-revision = "50f4c1e916b0"
-down_revision = "0001"
-branch_labels = None
-depends_on = None
+revision: str = "0002"
+down_revision: str | Sequence[str] | None = "0001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
