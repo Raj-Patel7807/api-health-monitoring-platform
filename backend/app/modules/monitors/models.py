@@ -28,13 +28,8 @@ class Monitor(Base):
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
     method: Mapped[str] = mapped_column(
-        Enum(
-            HttpMethod,
-            name="http_method",
-            create_type=False,
-            values_callable=lambda obj: [e.value for e in obj],
-        ),
-        default=HttpMethod.GET.value,
+        Enum(HttpMethod, name="http_method", create_type=False),
+        default=HttpMethod.GET,
         nullable=False,
     )
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
