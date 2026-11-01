@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
 from app.auth.router import router as auth_router
+from app.modules.channels.router import router as channels_router
 from app.modules.monitors.router import router as monitors_router
 
 router = APIRouter()
 router.include_router(auth_router)
 router.include_router(monitors_router)
+router.include_router(channels_router)
 
 
 @router.get("/health", tags=["infrastructure"])

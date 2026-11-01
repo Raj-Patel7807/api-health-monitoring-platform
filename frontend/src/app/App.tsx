@@ -8,6 +8,8 @@ import { HealthStatus } from "./components/HealthStatus";
 import { MonitorsPage } from "./pages/MonitorsPage";
 import { MonitorFormPage } from "./pages/MonitorFormPage";
 import { MonitorDetailPage } from "./pages/MonitorDetailPage";
+import { ChannelsPage } from "./pages/ChannelsPage";
+import { ChannelFormPage } from "./pages/ChannelFormPage";
 
 const STACK = [
     {
@@ -188,6 +190,12 @@ export function App() {
                 <Route
                     path="/monitors/:monitorId/edit"
                     element={<MonitorFormPage />}
+                />
+                <Route path="/channels" element={<ChannelsPage />} />
+                <Route path="/channels/new" element={<ChannelFormPage />} />
+                <Route
+                    path="/channels/:channelId/edit"
+                    element={<ChannelFormPage />}
                 />
             </Route>
         </Routes>

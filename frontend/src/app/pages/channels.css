@@ -1,0 +1,193 @@
+/* ── Notification Channels UI (US-03) ───────────────────────────────────── */
+
+/* Channel type badge */
+.channel-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--clr-text-primary);
+    white-space: nowrap;
+}
+
+/* Name cell */
+.channel-name-cell {
+    font-weight: 500;
+    color: var(--clr-text-primary);
+}
+
+/* Secret display hint */
+.channel-hint-cell {
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.channel-hint {
+    font-size: 0.78rem;
+    font-family: var(--font-mono, "Fira Code", "Cascadia Code", monospace);
+    color: var(--clr-text-secondary);
+    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--clr-border);
+}
+
+.channel-hint--none {
+    color: var(--clr-text-muted);
+    font-style: italic;
+    background: none;
+    border: none;
+}
+
+/* ── Enabled toggle switch ─────────────────────────────────────────────── */
+.channel-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition:
+        background var(--transition-fast),
+        opacity var(--transition-fast);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.channel-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.channel-toggle--on {
+    background: var(--clr-accent);
+}
+
+.channel-toggle--off {
+    background: var(--clr-border);
+}
+
+.channel-toggle-knob {
+    position: absolute;
+    left: 0.18rem;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform var(--transition-fast);
+    pointer-events: none;
+}
+
+.channel-toggle--on .channel-toggle-knob {
+    transform: translateX(1rem);
+}
+
+/* ── Form: type locked display ─────────────────────────────────────────── */
+.channel-type-locked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    font-size: 0.9rem;
+}
+
+.channel-type-locked-note {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--clr-text-secondary);
+}
+
+/* ── Form: secret field hint (current value display) ───────────────────── */
+.channel-secret-hint {
+    font-size: 0.82rem;
+    color: var(--clr-text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.channel-secret-hint code {
+    font-family: var(--font-mono, "Fira Code", monospace);
+    font-size: 0.8rem;
+    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--clr-border);
+}
+
+/* ── Form layout helpers ─────────────────────────────────────────────── */
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+}
+
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--clr-text-primary);
+}
+
+.form-input {
+    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-size: 0.9rem;
+    padding: var(--space-3) var(--space-4);
+    width: 100%;
+    outline: none;
+    transition: border-color var(--transition-fast);
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    border-color: var(--clr-accent);
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238899aa' d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+.form-field-error {
+    font-size: 0.82rem;
+    color: var(--clr-error, #f87171);
+    margin: 0;
+}
+
+.form-field-hint {
+    font-size: 0.8rem;
+    color: var(--clr-text-secondary);
+    margin: 0;
+}
+
+.form-error-banner {
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--clr-error, #f87171);
+    font-size: 0.9rem;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+    margin-top: var(--space-6);
+}
