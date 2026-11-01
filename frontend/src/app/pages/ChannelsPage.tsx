@@ -10,13 +10,14 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-    useMutation,
-    useQuery,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listChannels, deleteChannel, updateChannel, ApiError } from "../../lib/channelsApi";
+import {
+    listChannels,
+    deleteChannel,
+    updateChannel,
+    ApiError,
+} from "../../lib/channelsApi";
 import type { Channel } from "../../lib/channels";
 import { CHANNEL_TYPE_LABELS } from "../../lib/channels";
 import { ConfirmDialog } from "../components/ConfirmDialog";

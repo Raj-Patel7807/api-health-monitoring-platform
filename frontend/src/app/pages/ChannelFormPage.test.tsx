@@ -11,7 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
@@ -58,10 +58,7 @@ describe("validateSecret", () => {
 
     it("accepts valid https webhook", () => {
         expect(
-            validateSecret(
-                "webhook",
-                "https://my-service.example.com/hook",
-            ),
+            validateSecret("webhook", "https://my-service.example.com/hook"),
         ).toBeNull();
     });
 
@@ -121,10 +118,7 @@ describe("validateChannelForm", () => {
     });
 
     it("requires name on create", () => {
-        const errors = validateChannelForm(
-            { ...validCreate, name: "" },
-            false,
-        );
+        const errors = validateChannelForm({ ...validCreate, name: "" }, false);
         expect(errors.name).toBeTruthy();
     });
 
@@ -167,10 +161,7 @@ describe("validateChannelForm", () => {
 
 // We test through the actual App component to catch routing and role context.
 
-function renderApp(
-    initialEntry: string,
-    mockFetch: ReturnType<typeof vi.fn>,
-) {
+function renderApp(initialEntry: string, mockFetch: ReturnType<typeof vi.fn>) {
     vi.stubGlobal("fetch", mockFetch);
     const client = new QueryClient({
         defaultOptions: {
@@ -198,9 +189,11 @@ describe("ChannelFormPage — create mode", () => {
     });
 
     it("shows required errors when submitting empty form", async () => {
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        const mockFetch = vi
+            .fn()
+            .mockResolvedValue(
+                new Response(JSON.stringify({ items: [] }), { status: 200 }),
+            );
         renderApp("/channels/new", mockFetch);
 
         expect(
@@ -216,9 +209,11 @@ describe("ChannelFormPage — create mode", () => {
     });
 
     it("shows Slack-specific required message when slack type selected", async () => {
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        const mockFetch = vi
+            .fn()
+            .mockResolvedValue(
+                new Response(JSON.stringify({ items: [] }), { status: 200 }),
+            );
         renderApp("/channels/new", mockFetch);
 
         await screen.findByRole("heading", { name: "Add channel" });
@@ -235,9 +230,11 @@ describe("ChannelFormPage — create mode", () => {
     });
 
     it("shows validation error for bad Slack URL", async () => {
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        const mockFetch = vi
+            .fn()
+            .mockResolvedValue(
+                new Response(JSON.stringify({ items: [] }), { status: 200 }),
+            );
         renderApp("/channels/new", mockFetch);
 
         await screen.findByRole("heading", { name: "Add channel" });
@@ -251,15 +248,16 @@ describe("ChannelFormPage — create mode", () => {
 
         fireEvent.click(screen.getByRole("button", { name: /add channel/i }));
 
-        expect(
-            await screen.findByText(/hooks\.slack\.com/i),
-        ).toBeInTheDocument();
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent(/hooks\.slack\.com/i);
     });
 
     it("does not call the API when validation fails", async () => {
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        const mockFetch = vi
+            .fn()
+            .mockResolvedValue(
+                new Response(JSON.stringify({ items: [] }), { status: 200 }),
+            );
         renderApp("/channels/new", mockFetch);
 
         await screen.findByRole("heading", { name: "Add channel" });
@@ -273,7 +271,7 @@ describe("ChannelFormPage — create mode", () => {
 
         // No POST call was made
         const postCalls = mockFetch.mock.calls.filter(
-            ([, init]: [string, RequestInit]) => init?.method === "POST",
+            (call) => (call[1] as RequestInit | undefined)?.method === "POST",
         );
         expect(postCalls).toHaveLength(0);
     });
@@ -307,13 +305,17 @@ describe("ChannelFormPage — create mode", () => {
         fireEvent.click(screen.getByRole("button", { name: /add channel/i }));
 
         // Secret input should be cleared after submit attempt
-        expect((secretInput as HTMLInputElement).value).toBe("");
+        await waitFor(() => {
+            expect((secretInput as HTMLInputElement).value).toBe("");
+        });
     });
 });
 
 describe("ChannelsPage — role-aware controls and delete flow", () => {
     beforeEach(() => {
         localStorage.setItem("access_token", "test-token");
+        HTMLDialogElement.prototype.showModal = vi.fn();
+        HTMLDialogElement.prototype.close = vi.fn();
     });
 
     afterEach(() => {
@@ -322,9 +324,11 @@ describe("ChannelsPage — role-aware controls and delete flow", () => {
     });
 
     it("shows Add channel button for admin users", async () => {
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        const mockFetch = vi
+            .fn()
+            .mockResolvedValue(
+                new Response(JSON.stringify({ items: [] }), { status: 200 }),
+            );
         renderApp("/channels", mockFetch);
 
         // useCurrentRole stub returns "admin"
@@ -360,9 +364,7 @@ describe("ChannelsPage — role-aware controls and delete flow", () => {
         fireEvent.click(deleteBtn);
 
         // Confirm dialog is shown
-        expect(
-            screen.getByText(/Delete channel\?/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Delete channel\?/i)).toBeInTheDocument();
         expect(
             screen.getByText(/"Production Alerts" will be removed/),
         ).toBeInTheDocument();

@@ -61,7 +61,8 @@ export function ChannelFormPage() {
     });
     const monitors = monitorsData?.items ?? [];
 
-    const [values, setValues] = useState<ChannelFormValues>(DEFAULT_FORM_VALUES);
+    const [values, setValues] =
+        useState<ChannelFormValues>(DEFAULT_FORM_VALUES);
     const [fieldErrors, setFieldErrors] = useState<
         Partial<Record<ChannelField, string>>
     >({});
@@ -144,10 +145,18 @@ export function ChannelFormPage() {
                     return;
                 }
                 // 422 field errors go under the matching field
-                if (err.status === 422 && Object.keys(err.fieldErrors).length > 0) {
+                if (
+                    err.status === 422 &&
+                    Object.keys(err.fieldErrors).length > 0
+                ) {
                     const mapped: Partial<Record<ChannelField, string>> = {};
                     for (const [k, v] of Object.entries(err.fieldErrors)) {
-                        if (k === "secret_value" || k === "name" || k === "type" || k === "scope") {
+                        if (
+                            k === "secret_value" ||
+                            k === "name" ||
+                            k === "type" ||
+                            k === "scope"
+                        ) {
                             mapped[k as ChannelField] = v;
                         }
                     }
@@ -243,7 +252,10 @@ export function ChannelFormPage() {
                     >
                         {/* ── Type (locked on edit) ── */}
                         <div className="form-field">
-                            <label htmlFor="channel-type" className="form-label">
+                            <label
+                                htmlFor="channel-type"
+                                className="form-label"
+                            >
                                 Type
                             </label>
                             {isEditMode ? (
@@ -267,10 +279,7 @@ export function ChannelFormPage() {
                                             : undefined
                                     }
                                     onChange={(e) =>
-                                        handleChange(
-                                            "type",
-                                            e.target.value,
-                                        )
+                                        handleChange("type", e.target.value)
                                     }
                                 >
                                     {CHANNEL_TYPES.map((t) => (
@@ -293,7 +302,10 @@ export function ChannelFormPage() {
 
                         {/* ── Name ── */}
                         <div className="form-field">
-                            <label htmlFor="channel-name" className="form-label">
+                            <label
+                                htmlFor="channel-name"
+                                className="form-label"
+                            >
                                 Name
                             </label>
                             <input
@@ -379,14 +391,17 @@ export function ChannelFormPage() {
                                 {meta.label}
                             </label>
 
-                            {isEditMode && existingChannel?.secret_display_hint && (
-                                <p className="channel-secret-hint">
-                                    Current:{" "}
-                                    <code>
-                                        {existingChannel.secret_display_hint}
-                                    </code>
-                                </p>
-                            )}
+                            {isEditMode &&
+                                existingChannel?.secret_display_hint && (
+                                    <p className="channel-secret-hint">
+                                        Current:{" "}
+                                        <code>
+                                            {
+                                                existingChannel.secret_display_hint
+                                            }
+                                        </code>
+                                    </p>
+                                )}
 
                             <input
                                 id="channel-secret"
@@ -410,10 +425,7 @@ export function ChannelFormPage() {
                                     .filter(Boolean)
                                     .join(" ")}
                                 onChange={(e) =>
-                                    handleChange(
-                                        "secret_value",
-                                        e.target.value,
-                                    )
+                                    handleChange("secret_value", e.target.value)
                                 }
                             />
                             <p

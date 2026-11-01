@@ -11,11 +11,7 @@
 
 import { clearTokens, getAccessToken } from "./auth";
 import { refreshAccessToken } from "./authApi";
-import type {
-    Channel,
-    ChannelListResponse,
-    ChannelType,
-} from "./channels";
+import type { Channel, ChannelListResponse, ChannelType } from "./channels";
 
 // ---------------------------------------------------------------------------
 // Re-use ApiError from monitorsApi to keep one error class across the app
@@ -47,7 +43,7 @@ function cleanMsg(raw: unknown): string {
 
 function parseErrorResponse(status: number, data: unknown): ApiError {
     let message = "";
-    let code: string | null = null;
+    const code: string | null = null;
     const fieldErrors: Partial<Record<string, string>> = {};
 
     if (data && typeof data === "object") {
@@ -76,7 +72,8 @@ function parseErrorResponse(status: number, data: unknown): ApiError {
     if (!message) {
         if (status === 403) message = "You don't have permission to do that.";
         else if (status === 404) message = "Channel not found.";
-        else if (status >= 500) message = "Something went wrong on our side. Please try again.";
+        else if (status >= 500)
+            message = "Something went wrong on our side. Please try again.";
         else message = "Request failed.";
     }
 
@@ -210,10 +207,9 @@ export async function updateChannel(
  * Roles required: admin, operator.
  */
 export async function deleteChannel(id: string): Promise<void> {
-    return request<void>(
-        `/notification-channels/${encodeURIComponent(id)}`,
-        { method: "DELETE" },
-    );
+    return request<void>(`/notification-channels/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+    });
 }
 
 // ---------------------------------------------------------------------------

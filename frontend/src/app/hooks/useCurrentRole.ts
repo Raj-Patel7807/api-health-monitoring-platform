@@ -20,5 +20,6 @@ export function useCurrentRole(): { role: Role; isReadOnly: boolean } {
     // TODO(US-13): replace with real /auth/me call once backend ships the
     //              team+role extension.
     const role: Role = "admin";
-    return { role, isReadOnly: role === "read_only" };
+    const isReadOnly = (role as string) === "read_only";
+    return { role, isReadOnly };
 }

@@ -140,12 +140,13 @@ function isPrivateWebhook(val: string): boolean {
     try {
         const url = new URL(val);
         const host = url.hostname.toLowerCase();
-        return PRIVATE_HOSTS.some((pfx) => host === pfx || host.startsWith(pfx));
+        return PRIVATE_HOSTS.some(
+            (pfx) => host === pfx || host.startsWith(pfx),
+        );
     } catch {
         return false;
     }
 }
-
 
 /**
  * Validate the secret_value for a given channel type.
@@ -158,7 +159,9 @@ export function validateSecret(
     if (!value.trim()) return null; // empty = "keep current" on edit; required check done separately
     const v = value.trim();
     if (type === "slack") {
-        return slackSecret(v) ? null : "Must start with https://hooks.slack.com/";
+        return slackSecret(v)
+            ? null
+            : "Must start with https://hooks.slack.com/";
     }
     if (type === "discord") {
         return discordSecret(v)
@@ -169,8 +172,7 @@ export function validateSecret(
         return emailSecret(v) ? null : "Must be a valid email address.";
     }
     if (type === "webhook") {
-        if (!v.startsWith("https://"))
-            return "Must use https://";
+        if (!v.startsWith("https://")) return "Must use https://";
         if (isPrivateWebhook(v))
             return "Must not target localhost or private networks.";
         return null;
