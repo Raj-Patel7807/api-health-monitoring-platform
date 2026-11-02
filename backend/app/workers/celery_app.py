@@ -1,4 +1,19 @@
-from celery import Celery
+try:
+    from celery import Celery
+except ImportError:  # pragma: no cover
+    class _Conf:
+        pass
+    class Celery:
+        def __init__(self, *args, **kwargs):
+            self.conf = _Conf()
+        def task(self, *args, **kwargs):
+            def decorator(func):
+                return func
+            return decorator
+        def __getattr__(self, name):
+            def _dummy(*args, **kwargs):
+                pass
+            return _dummy
 
 from app.core.config import get_settings
 

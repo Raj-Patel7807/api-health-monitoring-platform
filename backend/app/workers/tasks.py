@@ -1,6 +1,11 @@
 import logging
 
-from celery import Task
+try:
+    from celery import Task
+except ImportError:  # pragma: no cover
+    class Task:  # minimal stub
+        def __init__(self, *args, **kwargs):
+            pass
 from kombu.exceptions import (  # type: ignore[import-untyped]
     OperationalError as BrokerOperationalError,
 )
