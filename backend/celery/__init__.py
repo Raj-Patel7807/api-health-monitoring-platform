@@ -1,5 +1,5 @@
-
 # Stub package for Celery when the real dependency is unavailable.
+
 
 class _Conf:
     pass
