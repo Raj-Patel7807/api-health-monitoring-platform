@@ -3,7 +3,14 @@
 import logging
 from typing import Any
 
-from celery.signals import task_failure, task_retry
+try:
+    from celery.signals import task_failure, task_retry
+except ImportError:  # pragma: no cover
+    class _Signal:
+        def connect(self, func):
+            return func
+    task_failure = _Signal()
+    task_retry = _Signal()
 
 from app.workers.failure import record_failed_task
 

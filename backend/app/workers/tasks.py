@@ -6,10 +6,16 @@ except ImportError:  # pragma: no cover
     class Task:  # minimal stub
         def __init__(self, *args, **kwargs):
             pass
-from kombu.exceptions import (  # type: ignore[import-untyped]
-    OperationalError as BrokerOperationalError,
-)
-from redis.exceptions import ConnectionError as RedisConnectionError
+try:
+    from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore
+except ImportError:  # pragma: no cover
+    class BrokerOperationalError(Exception):
+        pass
+try:
+    from redis.exceptions import ConnectionError as RedisConnectionError
+except ImportError:  # pragma: no cover
+    class RedisConnectionError(Exception):
+        pass
 from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 
 from app.db.session import get_db_session
