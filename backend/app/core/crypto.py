@@ -67,6 +67,15 @@ def _load_key(key: str | None) -> bytes:
     return raw
 
 
+def validate_encryption_key() -> None:
+    """Validate that the configured ENCRYPTION_KEY is present and valid AES-256 base64url.
+
+    Raises:
+        EncryptionConfigError: If the key is missing, invalid base64url, or not 32 bytes.
+    """
+    _load_key(None)
+
+
 def encrypt(plaintext: str, *, key: str | None = None, aad: bytes | None = None) -> str:
     """Encrypt ``plaintext`` and return a base64url string.
 
