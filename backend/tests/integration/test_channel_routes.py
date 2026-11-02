@@ -15,6 +15,7 @@ Test coverage:
 """
 
 from collections.abc import AsyncGenerator, Generator
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -71,12 +72,14 @@ _TEST_SECRET = "integration-test-secret-long-enough-for-hs256"
 @pytest.fixture(autouse=True)
 def _patch_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     from app.core import config as cfg
+    from app.core.crypto import generate_key
 
     cfg.get_settings.cache_clear()
     monkeypatch.setenv("JWT_SECRET_KEY", _TEST_SECRET)
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
     monkeypatch.setenv("REFRESH_TOKEN_EXPIRE_DAYS", "7")
+    monkeypatch.setenv("ENCRYPTION_KEY", generate_key())
     yield
     cfg.get_settings.cache_clear()
 
@@ -134,6 +137,28 @@ async def test_channel_crud_lifecycle(client: AsyncClient) -> None:
     assert created["secret_display_hint"] is not None
     assert len(created["secret_display_hint"]) > 0
 
+    # 1b. Verify the secret is actually encrypted in the database
+    from uuid import UUID
+
+    from sqlalchemy import select
+
+    from app.core.crypto import DecryptionError, decrypt
+    from app.modules.channels.models import NotificationChannel
+
+    async with _TestSessionFactory() as db:
+        res = await db.execute(
+            select(NotificationChannel).where(NotificationChannel.id == UUID(channel_id))
+        )
+        ch = res.scalar_one()
+        assert ch.secret_ref is not None
+        assert "XXXX" not in ch.secret_ref
+        assert decrypt(ch.secret_ref) == "https://hooks.slack.com/services/T00/B00/XXXX"
+
+        # Tampered ciphertext fails decryption
+        tampered = ch.secret_ref[:-4] + ("AAAA" if ch.secret_ref[-4:] != "AAAA" else "BBBB")
+        with pytest.raises(DecryptionError):
+            decrypt(tampered)
+
     # 2. List channels
     list_resp = await client.get("/api/v1/notification-channels", headers=headers)
     assert list_resp.status_code == 200
@@ -168,6 +193,13 @@ async def test_channel_crud_lifecycle(client: AsyncClient) -> None:
     assert "secret_value" not in rotated
     # Hint updated to reflect new secret suffix
     assert rotated["secret_display_hint"] is not None
+
+    async with _TestSessionFactory() as db:
+        res = await db.execute(
+            select(NotificationChannel).where(NotificationChannel.id == UUID(channel_id))
+        )
+        ch = res.scalar_one()
+        assert decrypt(ch.secret_ref) == "https://hooks.slack.com/services/T99/B99/YYYY"
 
     # 5. Soft delete
     del_resp = await client.delete(f"/api/v1/notification-channels/{channel_id}", headers=headers)
@@ -372,3 +404,146 @@ async def test_scope_team_filter(client: AsyncClient) -> None:
     assert resp.status_code == 200
     for item in resp.json()["items"]:
         assert item["monitor_id"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: all channel types creation and secret decryption
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_all_channel_types_created_and_encrypted(client: AsyncClient) -> None:
+    token = await _register_user(client, "chan_alltypes@example.com", "All Types Team")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    from sqlalchemy import select
+
+    from app.core.crypto import decrypt
+    from app.modules.channels.models import NotificationChannel
+
+    test_channels = [
+        ("slack", "Slack", "https://hooks.slack.com/services/T11/B11/SLACKSECRET"),
+        ("discord", "Discord", "https://discord.com/api/webhooks/999/DISCORDSECRET"),
+        ("email", "Email", "alerts-all@example.com"),
+        ("webhook", "Webhook", "https://api.mycompany.example.com/alerts/endpoint"),
+    ]
+
+    for c_type, name, secret in test_channels:
+        resp = await client.post(
+            "/api/v1/notification-channels",
+            json={"type": c_type, "name": name, "secret_value": secret},
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert "secret_value" not in data
+        assert "secret_ref" not in data
+        assert data["secret_display_hint"] is not None
+
+        # Verify DB row is encrypted and decryptable
+        async with _TestSessionFactory() as db:
+            res = await db.execute(
+                select(NotificationChannel).where(NotificationChannel.id == UUID(data["id"]))
+            )
+            ch = res.scalar_one()
+            assert ch.secret_ref is not None
+            assert secret not in ch.secret_ref
+            assert decrypt(ch.secret_ref) == secret
+
+
+# ---------------------------------------------------------------------------
+# Tests: monitor attachment and cross-team monitor 404
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_channel_with_monitor_scoping(client: AsyncClient) -> None:
+    token_a = await _register_user(client, "mon_team_a@example.com", "Mon Team A")
+    token_b = await _register_user(client, "mon_team_b@example.com", "Mon Team B")
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # Team A creates a monitor
+    mon_resp = await client.post(
+        "/api/v1/monitors",
+        json={"name": "Team A API", "url": "https://api.example.com/health"},
+        headers=headers_a,
+    )
+    assert mon_resp.status_code == 201
+    monitor_a_id = mon_resp.json()["id"]
+
+    # Team A attaches a channel to monitor A -> 201
+    ch_resp = await client.post(
+        "/api/v1/notification-channels",
+        json={
+            "type": "email",
+            "name": "Team A Monitor Channel",
+            "monitor_id": monitor_a_id,
+            "secret_value": "mon_a@example.com",
+        },
+        headers=headers_a,
+    )
+    assert ch_resp.status_code == 201
+    assert ch_resp.json()["monitor_id"] == monitor_a_id
+
+    # Filter by monitor_id -> returns the attached channel
+    list_resp = await client.get(
+        f"/api/v1/notification-channels?monitor_id={monitor_a_id}",
+        headers=headers_a,
+    )
+    assert list_resp.status_code == 200
+    items = list_resp.json()["items"]
+    assert len(items) == 1
+    assert items[0]["monitor_id"] == monitor_a_id
+
+    # Team B tries to create a channel referencing Team A's monitor -> 404
+    b_cross_create = await client.post(
+        "/api/v1/notification-channels",
+        json={
+            "type": "email",
+            "name": "Team B Steal",
+            "monitor_id": monitor_a_id,
+            "secret_value": "b@example.com",
+        },
+        headers=headers_b,
+    )
+    assert b_cross_create.status_code == 404
+
+    # Team B tries to list channels for Team A's monitor -> 404
+    b_cross_list = await client.get(
+        f"/api/v1/notification-channels?monitor_id={monitor_a_id}",
+        headers=headers_b,
+    )
+    assert b_cross_list.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Tests: secrets never leaked in logs
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_no_secret_leak_in_logs(
+    client: AsyncClient,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import logging
+
+    caplog.set_level(logging.DEBUG)
+    token = await _register_user(client, "chan_log_safe@example.com", "Log Safe Team")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    super_secret = "https://hooks.slack.com/services/T999/B999/TOP_SECRET_TOKEN"
+    resp = await client.post(
+        "/api/v1/notification-channels",
+        json={
+            "type": "slack",
+            "name": "Log Check",
+            "secret_value": super_secret,
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201
+
+    assert "TOP_SECRET_TOKEN" not in caplog.text
+    assert super_secret not in caplog.text
