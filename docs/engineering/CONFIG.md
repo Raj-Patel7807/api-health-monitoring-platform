@@ -12,6 +12,11 @@ Use local, test, staging, and production environments. `.env.example` files cont
 | `DATABASE_URL` | Yes | PostgreSQL connection URL. |
 | `REDIS_URL` | Yes in production | Redis broker and result backend URL. |
 | `LLM_ENABLED` | No | `false`; keeps the optional AI capability disabled. |
+| `ENCRYPTION_KEY` | Yes | Base64url-encoded 32-byte AES-256 key for secret storage at rest (US-17, US-03). Generate with `python -m app.core.crypto`. |
+| `JWT_SECRET_KEY` | Yes | Secret key for JWT access and refresh token signing. |
+| `JWT_ALGORITHM` | No | `HS256`; signing algorithm for JWT tokens. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `15`; access token lifetime in minutes. |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | No | `7`; refresh token lifetime in days. |
 
 ## Planned variables
 

@@ -21,7 +21,8 @@ class NotificationChannel(Base):
     """A notification target (Slack, Discord, email, or webhook) owned by a team.
 
     ``monitor_id=None`` means the channel applies to the whole team.
-    The raw secret is **never** stored here — only a safe display hint.
+    The raw secret is **never** stored in plaintext — only AES-256-GCM encrypted
+    in ``secret_ref`` and exposed as a safe display hint in ``secret_display_hint``.
     """
 
     __tablename__ = "notification_channels"
@@ -37,7 +38,7 @@ class NotificationChannel(Base):
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Non-secret configuration options (no keys required currently).
     configuration: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    # Pointer to the secrets vault — never the raw secret value.
+    # AES-256-GCM encrypted secret ciphertext + nonce + tag (never plaintext).
     secret_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Safe, truncated preview shown to users after creation (e.g. "hooks.slack.com/…/X7Q").
     secret_display_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -52,3 +53,12 @@ class NotificationChannel(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    @property
+    def encrypted_secret(self) -> str | None:
+        """Alias for secret_ref holding the AES-256-GCM encrypted secret value."""
+        return self.secret_ref
+
+    @encrypted_secret.setter
+    def encrypted_secret(self, value: str | None) -> None:
+        self.secret_ref = value
