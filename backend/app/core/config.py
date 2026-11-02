@@ -11,6 +11,16 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/api_health"
     redis_url: str = "redis://localhost:6379/0"
+    # Email sender configuration
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_user: str = "user@example.com"
+    smtp_password: str = "password"
+    email_from: str = "noreply@example.com"
+    # Webhook configuration
+    webhook_secret: str = "changeme"
+    # Test harness token
+    harness_token: str = "testtoken"
     llm_enabled: bool = False
 
     # Base64url-encoded 32-byte AES-256 key. Generate: python -m app.core.crypto
