@@ -4,15 +4,18 @@ import enum
 import uuid
 from app.db.session import Base
 
+
 class ChannelType(str, enum.Enum):
     email = "email"
     webhook = "webhook"
+
 
 class DeliveryStatus(str, enum.Enum):
     success = "success"
     failed = "failed"
     retrying = "retrying"
     dead_letter = "dead_letter"
+
 
 class DeliveryLog(Base):
     __tablename__ = "delivery_logs"

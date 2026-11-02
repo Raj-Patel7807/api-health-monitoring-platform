@@ -1,18 +1,22 @@
 import os
 import uuid
+
 try:
     from aiosmtplib import send
 except ImportError:  # pragma: no cover
+
     async def send(*args, **kwargs):
         # No-op stub for testing environment
         return None
+
+
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape
 except ImportError:  # pragma: no cover
     Environment = None
     FileSystemLoader = None
     select_autoescape = None
-    
+
 from app.core.config import get_settings
 from app.models.delivery import DeliveryLog, ChannelType, DeliveryStatus
 from app.db.session import create_database_engine
@@ -29,6 +33,7 @@ else:
     env = None
 
 SessionLocal = sessionmaker(bind=create_database_engine())
+
 
 async def send_email(to: str, subject: str, template_name: str, context: dict) -> str:
     """Send an email and record a DeliveryLog entry.

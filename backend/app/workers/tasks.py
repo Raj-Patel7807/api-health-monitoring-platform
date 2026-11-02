@@ -3,19 +3,28 @@ import logging
 try:
     from celery import Task
 except ImportError:  # pragma: no cover
+
     class Task:  # minimal stub
         def __init__(self, *args, **kwargs):
             pass
+
+
 try:
     from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore
 except ImportError:  # pragma: no cover
+
     class BrokerOperationalError(Exception):
         pass
+
+
 try:
     from redis.exceptions import ConnectionError as RedisConnectionError
 except ImportError:  # pragma: no cover
+
     class RedisConnectionError(Exception):
         pass
+
+
 from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 
 from app.db.session import get_db_session
@@ -106,6 +115,7 @@ def analyze_incident(self: Task, incident_id: str) -> str:
     """Reserve advisory AI work; it must not determine monitoring facts."""
     return incident_id
 
+
 @celery_app.task(name="app.workers.tasks.send_email_task")
 def send_email_task(delivery_id: str) -> str:
     """Celery task to send an email based on a DeliveryLog record."""
@@ -117,7 +127,9 @@ def send_email_task(delivery_id: str) -> str:
         raise ValueError(f"Delivery {delivery_id} not found")
     # Assume delivery.request_payload contains keys: to, subject, template_data
     payload = delivery.request_payload
-    result = send_email(to=payload["to"], subject=payload["subject"], template_data=payload.get("template_data", {}))
+    result = send_email(
+        to=payload["to"], subject=payload["subject"], template_data=payload.get("template_data", {})
+    )
     # Update delivery status based on result
     if result:
         delivery.update_status(DeliveryStatus.success)
@@ -126,6 +138,7 @@ def send_email_task(delivery_id: str) -> str:
     db.commit()
     db.close()
     return delivery_id
+
 
 @celery_app.task(name="app.workers.tasks.send_webhook_task")
 def send_webhook_task(delivery_id: str) -> str:

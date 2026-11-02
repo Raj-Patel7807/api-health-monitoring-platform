@@ -6,9 +6,11 @@ from typing import Any
 try:
     from celery.signals import task_failure, task_retry
 except ImportError:  # pragma: no cover
+
     class _Signal:
         def connect(self, func):
             return func
+
     task_failure = _Signal()
     task_retry = _Signal()
 

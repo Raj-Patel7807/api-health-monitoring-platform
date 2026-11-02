@@ -11,12 +11,14 @@ router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 
 SessionLocal = Session(bind=create_database_engine())
 
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
 
 @router.get("/", response_model=List[dict])
 def list_deliveries(
@@ -45,6 +47,7 @@ def list_deliveries(
         for d in deliveries
     ]
 
+
 @router.get("/{delivery_id}", response_model=dict)
 def get_delivery(delivery_id: str, db: Session = Depends(get_db)):
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
@@ -66,6 +69,7 @@ def get_delivery(delivery_id: str, db: Session = Depends(get_db)):
         "updated_at": delivery.updated_at,
     }
 
+
 @router.post("/{delivery_id}/replay", response_model=dict)
 def replay_delivery(delivery_id: str, db: Session = Depends(get_db)):
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
@@ -76,5 +80,6 @@ def replay_delivery(delivery_id: str, db: Session = Depends(get_db)):
     delivery.status = DeliveryStatus.retrying
     db.commit()
     from app.workers.tasks import replay_delivery_task
+
     replay_delivery_task.delay(str(delivery.id))
     return {"message": "Replay enqueued", "delivery_id": delivery_id}

@@ -1,34 +1,45 @@
 try:
     from celery import Celery
 except ImportError:  # pragma: no cover
+
     class _Conf:
         pass
 
     class Celery:
         def __init__(self, *args, **kwargs):
             self.conf = _Conf()
+
         def task(self, *decorator_args, **decorator_kwargs):
             def decorator(func):
                 class SimpleTask:
                     def __init__(self):
                         for k, v in decorator_kwargs.items():
                             setattr(self, k, v)
+
                     def __call__(self, *args, **kwargs):
                         return func(self, *args, **kwargs)
+
                     def run(self, *args, **kwargs):
                         return func(self, *args, **kwargs)
+
                     def retry(self, *args, **kwargs):
                         raise NotImplementedError("retry stub not implemented")
+
                     def apply(self, *args, **kwargs):
                         if kwargs.get("throw"):
                             return self.run(*args, **kwargs)
                         return self.run(*args, **kwargs)
+
                 return SimpleTask()
+
             return decorator
+
         def __getattr__(self, name):
             def _dummy(*args, **kwargs):
                 pass
+
             return _dummy
+
 
 from app.core.config import get_settings
 

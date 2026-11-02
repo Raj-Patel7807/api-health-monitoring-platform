@@ -28,7 +28,6 @@ __all__ = [
 ]
 
 
-
 def create_database_engine() -> Engine:
     """Create the synchronous SQLAlchemy engine used by migrations."""
     return create_engine(get_settings().database_url, pool_pre_ping=True)

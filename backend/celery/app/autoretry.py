@@ -1,6 +1,9 @@
 # Stub for celery.app.autoretry providing backoff helper used in tests.
 
-def get_exponential_backoff_interval(factor: int | None = None, maximum: int | None = None, full_jitter: bool = False) -> int:
+
+def get_exponential_backoff_interval(
+    factor: int | None = None, maximum: int | None = None, full_jitter: bool = False
+) -> int:
     """Return a deterministic backoff interval.
     The real Celery implementation calculates an exponential back‑off with jitter.
     For the test suite we just need a callable; the tests patch this function,

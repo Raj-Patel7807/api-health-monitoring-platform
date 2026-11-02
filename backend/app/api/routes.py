@@ -9,11 +9,13 @@ router.include_router(auth_router)
 router.include_router(monitors_router)
 router.include_router(channels_router)
 
+
 # Existing health route
-@router.get("/health", tags=["infrastructure"]) 
+@router.get("/health", tags=["infrastructure"])
 def health() -> dict[str, str]:
     """Return process liveness without depending on external services."""
     return {"status": "ok"}
+
 
 # Include delivery and harness routers
 from app.api.delivery_routes import router as delivery_router
