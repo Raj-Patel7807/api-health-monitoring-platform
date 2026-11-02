@@ -204,7 +204,7 @@ Notes: `http_status_code` and `response_time_ms` are `null` on timeouts and
 connection errors. `response_body_excerpt` is `null` for healthy checks and
 at most 500 characters otherwise. Errors: `404` monitor not found.
 
-### Notification channels
+### Notification channels ✅ (US-03)
 
 Channel object (returned by every channel endpoint):
 ```json
