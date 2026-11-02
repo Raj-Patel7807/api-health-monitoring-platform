@@ -22,14 +22,24 @@ from dotenv import load_dotenv
 # Ensure UTF-8 output on Windows consoles
 if sys.stdout.encoding != "utf-8":
     try:
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
     except Exception:
         pass
 
 
+from typing import Any
+
 import psycopg
 from psycopg.rows import dict_row
+
+
+def _fetchone_scalar(cur: psycopg.Cursor[Any]) -> Any:
+    """Fetch a single row and return its first column, or raise if empty."""
+    row = cur.fetchone()
+    assert row is not None, "Expected a row from RETURNING clause"
+    return row[0]
+
 
 # Paths
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -54,13 +64,13 @@ def get_resolved_db_url() -> str:
     # Remove +psycopg driver for direct psycopg connection
     clean_url = db_url.replace("+psycopg", "")
     parsed = urlparse(clean_url)
-    host = parsed.hostname or "127.0.0.1"
-    port = parsed.port or 5432
+    parsed_host = parsed.hostname or "127.0.0.1"
+    parsed_port = parsed.port or 5432
 
-    if host in ("localhost", "127.0.0.1"):
+    if parsed_host in ("localhost", "127.0.0.1"):
         reachable = False
         try:
-            with socket.create_connection((host, port), timeout=0.5):
+            with socket.create_connection((parsed_host, parsed_port), timeout=0.5):
                 reachable = True
         except (TimeoutError, OSError):
             reachable = False
@@ -75,9 +85,9 @@ def get_resolved_db_url() -> str:
                 )
                 if res.returncode == 0 and res.stdout.strip():
                     wsl_ip = res.stdout.strip().split()[0]
-                    with socket.create_connection((wsl_ip, port), timeout=0.5):
-                        new_netloc = parsed.netloc.replace(f"@{host}", f"@{wsl_ip}").replace(
-                            host, wsl_ip
+                    with socket.create_connection((wsl_ip, parsed_port), timeout=0.5):
+                        new_netloc = parsed.netloc.replace(f"@{parsed_host}", f"@{wsl_ip}").replace(
+                            parsed_host, wsl_ip
                         )
                         parsed = parsed._replace(netloc=new_netloc)
                         clean_url = urlunparse(parsed)
@@ -87,7 +97,7 @@ def get_resolved_db_url() -> str:
     return clean_url
 
 
-def run_alembic(command: list[str]) -> subprocess.CompletedProcess:
+def run_alembic(command: list[str]) -> subprocess.CompletedProcess[str]:
     alembic_exe = BACKEND_DIR / ".venv" / "Scripts" / "alembic.exe"
     if not alembic_exe.exists():
         alembic_exe = BACKEND_DIR / ".venv" / "bin" / "alembic"
@@ -299,7 +309,7 @@ def smoke_test_sample_data(url: str) -> None:
                     VALUES ('alice@example.com', 'Alice Engineer', 'argon2id$hashedpassword')
                     RETURNING id;
                 """)
-                user_id = cur.fetchone()[0]
+                user_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted user id: {user_id}")
 
                 # 2. Insert Team
@@ -308,7 +318,7 @@ def smoke_test_sample_data(url: str) -> None:
                     VALUES ('Platform Infra Team')
                     RETURNING id;
                 """)
-                team_id = cur.fetchone()[0]
+                team_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted team id: {team_id}")
 
                 # 3. Insert Team Membership
@@ -320,7 +330,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (team_id, user_id),
                 )
-                membership_id = cur.fetchone()[0]
+                membership_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted team_membership id: {membership_id}")
 
                 # 4. Insert Monitor
@@ -332,7 +342,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (team_id,),
                 )
-                monitor_id = cur.fetchone()[0]
+                monitor_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted monitor id: {monitor_id}")
 
                 # 5. Insert Monitor Assertion
@@ -344,7 +354,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (monitor_id,),
                 )
-                assertion_id = cur.fetchone()[0]
+                assertion_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted monitor_assertion id: {assertion_id}")
 
                 # 6. Insert Health Check Result (dated 2026-10-12, lands in partition 2026_10)
@@ -358,7 +368,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (monitor_id,),
                 )
-                hcr_id = cur.fetchone()[0]
+                hcr_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted health_check_result id: {hcr_id} into monthly partition")
 
                 # 7. Insert Rollup
@@ -372,7 +382,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (monitor_id,),
                 )
-                rollup_id = cur.fetchone()[0]
+                rollup_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted health_check_daily_rollups id: {rollup_id}")
 
                 # 8. Insert Maintenance Window
@@ -386,7 +396,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (monitor_id, user_id),
                 )
-                maint_id = cur.fetchone()[0]
+                maint_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted maintenance_window id: {maint_id}")
 
                 # 9. Insert Incident
@@ -398,7 +408,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (monitor_id,),
                 )
-                incident_id = cur.fetchone()[0]
+                incident_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted incident id: {incident_id}")
 
                 # 10. Insert Notification Channel
@@ -410,7 +420,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (team_id, monitor_id),
                 )
-                channel_id = cur.fetchone()[0]
+                channel_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted notification_channel id: {channel_id}")
 
                 # 11. Insert Alert Delivery
@@ -422,7 +432,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (incident_id, channel_id),
                 )
-                delivery_id = cur.fetchone()[0]
+                delivery_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted alert_delivery id: {delivery_id}")
 
                 # 12. Insert Report
@@ -436,7 +446,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (team_id, monitor_id, user_id),
                 )
-                report_id = cur.fetchone()[0]
+                report_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted report id: {report_id}")
 
                 # 13. Insert Audit Entry (append-only)
@@ -448,7 +458,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (user_id, monitor_id),
                 )
-                audit_id = cur.fetchone()[0]
+                audit_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted audit_entry id: {audit_id}")
 
                 # 14. Insert AI Analysis
@@ -460,7 +470,7 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (incident_id,),
                 )
-                analysis_id = cur.fetchone()[0]
+                analysis_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted ai_analysis id: {analysis_id}")
 
                 # 15. Insert Embedding (1536 dims pgvector)
@@ -473,18 +483,18 @@ def smoke_test_sample_data(url: str) -> None:
                 """,
                     (analysis_id, dummy_vec),
                 )
-                emb_id = cur.fetchone()[0]
+                emb_id = _fetchone_scalar(cur)
                 print(f"  [+] Inserted embedding id: {emb_id} with 1536-dimensional vector")
 
                 print("  [OK] Successfully exercised all 15 tables and their foreign keys!")
                 # In psycopg 3, raising psycopg.Rollback rolls back the transaction cleanly
+                print("  [OK] Rolling back smoke-test transaction cleanly.")
                 raise psycopg.Rollback()
-    print("  [OK] Rolled back smoke-test transaction cleanly.")
 
     # -------------------------------------------------------------
     # Negative constraint tests: assert errors on invalid actions
     # -------------------------------------------------------------
-    print("\n  [NEGATIVE CONSTRAINT TESTS]")
+    print("\n  [NEGATIVE CONSTRAINT TESTS]")  # type: ignore[unreachable]
     with psycopg.connect(url) as conn:
         # Test 1: Invalid check constraint (check_interval_seconds <= 0)
         try:
@@ -579,7 +589,7 @@ def test_idempotency_rollback(url: str) -> None:
 #     print("  [OK] Destroy-and-recreate test PASSED 100%!")
 
 
-def main():
+def main() -> None:
     print("==================================================================")
     print(" DISTRIBUTED API HEALTH MONITORING — DATABASE VERIFICATION SUITE  ")
     print("==================================================================")

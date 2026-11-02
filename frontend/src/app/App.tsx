@@ -1,4 +1,15 @@
+import { Link, Route, Routes } from "react-router-dom";
+
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { DashboardPage } from "./pages/DashboardPage";
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { HealthStatus } from "./components/HealthStatus";
+import { MonitorsPage } from "./pages/MonitorsPage";
+import { MonitorFormPage } from "./pages/MonitorFormPage";
+import { MonitorDetailPage } from "./pages/MonitorDetailPage";
+import { ChannelsPage } from "./pages/ChannelsPage";
+import { ChannelFormPage } from "./pages/ChannelFormPage";
 
 const STACK = [
     {
@@ -39,7 +50,7 @@ const STACK = [
     },
 ];
 
-export function App() {
+function HomePage() {
     return (
         <div className="page-wrapper">
             {/* ── Header ──────────────────────────────────────────────── */}
@@ -55,7 +66,14 @@ export function App() {
                         </div>
                         <span className="logo-text">API Health Monitor</span>
                     </a>
-                    <span className="header-badge">Header</span>
+                    <nav className="header-auth-actions" aria-label="Account">
+                        <Link className="header-login-link" to="/login">
+                            Log in
+                        </Link>
+                        <Link className="header-signup-link" to="/signup">
+                            Sign up
+                        </Link>
+                    </nav>
                 </div>
             </header>
 
@@ -153,5 +171,33 @@ export function App() {
                 </div>
             </footer>
         </div>
+    );
+}
+export function App() {
+    return (
+        <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/monitors" element={<MonitorsPage />} />
+                <Route path="/monitors/new" element={<MonitorFormPage />} />
+                <Route
+                    path="/monitors/:monitorId"
+                    element={<MonitorDetailPage />}
+                />
+                <Route
+                    path="/monitors/:monitorId/edit"
+                    element={<MonitorFormPage />}
+                />
+                <Route path="/channels" element={<ChannelsPage />} />
+                <Route path="/channels/new" element={<ChannelFormPage />} />
+                <Route
+                    path="/channels/:channelId/edit"
+                    element={<ChannelFormPage />}
+                />
+            </Route>
+        </Routes>
     );
 }

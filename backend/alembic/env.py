@@ -52,13 +52,13 @@ def get_database_url() -> str:
             scheme_prefix = "+psycopg"
 
         parsed = urlparse(parseable_url)
-        host = parsed.hostname or "127.0.0.1"
-        port = parsed.port or 5432
+        parsed_host = parsed.hostname or "127.0.0.1"
+        parsed_port = parsed.port or 5432
 
-        if host in ("localhost", "127.0.0.1"):
+        if parsed_host in ("localhost", "127.0.0.1"):
             reachable = False
             try:
-                with socket.create_connection((host, port), timeout=0.5):
+                with socket.create_connection((parsed_host, parsed_port), timeout=0.5):
                     reachable = True
             except (TimeoutError, OSError):
                 reachable = False
@@ -73,10 +73,10 @@ def get_database_url() -> str:
                     )
                     if res.returncode == 0 and res.stdout.strip():
                         wsl_ip = res.stdout.strip().split()[0]
-                        with socket.create_connection((wsl_ip, port), timeout=0.5):
-                            new_netloc = parsed.netloc.replace(f"@{host}", f"@{wsl_ip}").replace(
-                                host, wsl_ip
-                            )
+                        with socket.create_connection((wsl_ip, parsed_port), timeout=0.5):
+                            new_netloc = parsed.netloc.replace(
+                                f"@{parsed_host}", f"@{wsl_ip}"
+                            ).replace(parsed_host, wsl_ip)
                             parsed = parsed._replace(netloc=new_netloc)
                             parseable_url = urlunparse(parsed)
                 except Exception:

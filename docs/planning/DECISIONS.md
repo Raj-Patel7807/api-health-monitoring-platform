@@ -17,5 +17,6 @@
 | D-013 | 2026-09-22 | Use Celery instead of BullMQ wording in `FR2`. | The approved Python backend uses Celery + Redis. Required behavior remains asynchronous monitoring. | Accepted — `FR.md` aligned 2026-09-24 |
 | D-014 | 2026-09-24 | Remove NFR13 (worker failover) and US-23. | NFR13's 10-second standby-worker SLA is infrastructure-heavy for a course project. Worker resilience relies on Celery's built-in queue durability and idempotent tasks. US-23 lost its primary source requirement. | Accepted |
 | D-015 | 2026-09-24 | Rebalance sprint plan from 7 sprints to 6. | Sprint load was uneven (13–34 pts). Moved US-08 to Sprint 3, pulled US-14 and US-04 into Sprint 4, moved US-22 to Sprint 5, and merged Could Have work into Sprint 6. Average load is now ~25 pts/sprint. | Accepted |
+| D-016 | 2026-11-01 | Enforce single open incident via partial unique index and transaction savepoints (US-09). | Guarantees exactly one open incident per monitor even under concurrent check results without deadlocks or unhandled unique violation errors. Dispatches post-commit hooks for decoupled B5 alerting. | Accepted |
 
 Add a short row for every future major architecture or technology decision.

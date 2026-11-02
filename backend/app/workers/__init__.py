@@ -1,1 +1,1 @@
-"""Celery worker configuration and future task modules."""
+"""Celery worker configuration, task definitions, and failure tracking."""

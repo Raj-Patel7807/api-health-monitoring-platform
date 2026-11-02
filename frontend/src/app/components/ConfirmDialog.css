@@ -1,0 +1,112 @@
+/* ── Backdrop (native <dialog>) ──────────────────────────────────────────── */
+.confirm-dialog {
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    animation: backdropIn 200ms ease both;
+}
+
+@keyframes backdropIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────────── */
+.confirm-dialog-panel {
+    background: var(--clr-bg-surface);
+    border: 1px solid rgba(252, 129, 129, 0.25);
+    border-radius: var(--radius-xl);
+    box-shadow:
+        var(--shadow-card),
+        0 0 40px rgba(252, 129, 129, 0.08);
+    padding: var(--space-8);
+    width: min(26rem, calc(100vw - var(--space-8)));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-4);
+    animation: panelSlideUp var(--transition-normal) ease both;
+}
+
+@keyframes panelSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Icon ────────────────────────────────────────────────────────────────── */
+.confirm-dialog-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--clr-red-soft);
+    border: 1px solid rgba(252, 129, 129, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--clr-red);
+    flex-shrink: 0;
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.confirm-dialog-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--clr-text-primary);
+    margin: 0;
+}
+
+.confirm-dialog-desc {
+    font-size: 0.9rem;
+    color: var(--clr-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+.confirm-dialog-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+/* Danger button variant (also used from MonitorsPage / detail page) */
+.monitors-button--danger {
+    border: none;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: #ffffff;
+}
+
+.monitors-button--danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(229, 62, 62, 0.3);
+}
+
+.monitors-button--danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
