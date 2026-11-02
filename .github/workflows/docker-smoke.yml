@@ -19,6 +19,11 @@ jobs:
         timeout-minutes: 25
         steps:
             - uses: actions/checkout@v7
+            - name: Generate ephemeral encryption key
+              run: |
+                  KEY=$(python3 -c "import secrets, base64; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())")
+                  echo "::add-mask::$KEY"
+                  echo "ENCRYPTION_KEY=$KEY" >> "$GITHUB_ENV"
             - name: Validate Compose file
               run: docker compose -f docker-compose.yml config -q
             - name: Build and start the complete stack
