@@ -6,7 +6,13 @@ except ImportError:  # pragma: no cover
     async def send(*args, **kwargs):
         # No-op stub for testing environment
         return None
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+try:
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+except ImportError:  # pragma: no cover
+    Environment = None
+    FileSystemLoader = None
+    select_autoescape = None
+    
 from app.core.config import get_settings
 from app.models.delivery import DeliveryLog, ChannelType, DeliveryStatus
 from app.db.session import create_database_engine
@@ -14,10 +20,13 @@ from sqlalchemy.orm import sessionmaker
 
 settings = get_settings()
 templates_path = os.path.join(os.path.dirname(__file__), "..", "templates", "email")
-env = Environment(
-    loader=FileSystemLoader(templates_path),
-    autoescape=select_autoescape(["html", "xml"]),
-)
+if Environment:
+    env = Environment(
+        loader=FileSystemLoader(templates_path),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
+else:
+    env = None
 
 SessionLocal = sessionmaker(bind=create_database_engine())
 

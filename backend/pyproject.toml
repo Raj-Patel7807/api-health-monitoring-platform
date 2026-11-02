@@ -1,38 +1,34 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "api-health-monitor-backend"
 version = "0.1.0"
 description = "Backend foundation for the API health monitoring dashboard."
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 
 dependencies = [
-  "alembic>=1.14,<2",
-  "celery>=5.4,<6",
-  "fastapi>=0.115,<1",
-  "httpx>=0.28,<1",
-  "aiosmtplib>=2.0,<3",
-  "jinja2>=3.1,<4",
-  "pydantic-settings>=2.7,<3",
-  "psycopg[binary]>=3.2,<4",
-  "redis>=5.2,<6",
-  "sqlalchemy[asyncio]>=2.0,<3",
-  "uvicorn[standard]>=0.32,<1",
-  "cryptography>=50.0.2",
-  "httpx2>=2.13.1",
-  "python-jose[cryptography]>=3.3,<4",
-  "bcrypt>=4.0,<6",
-  "asyncpg>=0.29,<1",
-  "email-validator"
-]
-
-[dependency-groups]
-dev = [
-  "mypy>=1.13,<2",
-  "pytest>=8.3,<9",
-  "pytest-cov>=6,<7",
-  "ruff>=0.8,<1",
-  "pytest-asyncio>=0.24,<1",
-  "aiosqlite>=0.20,<1",
-  "email-validator>=2,<3"
+    "alembic>=1.14,<2",
+    "celery>=5.4,<6",
+    "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
+    "aiosmtplib>=2.0,<3",
+    "jinja2>=3.1,<4",
+    "pydantic-settings>=2.7,<3",
+    "psycopg[binary]>=3.2,<4",
+    "redis>=5.2,<6",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "uvicorn[standard]>=0.32,<1",
+    "cryptography>=50.0.2",
+    "httpx2>=2.13.1",
+    "python-jose[cryptography]>=3.3,<4",
+    "bcrypt>=4.0,<6",
+    "asyncpg>=0.29,<1",
+    "email-validator",
+    "pytest>=8.3,<9",
+    "pytest-asyncio>=0.24,<1",
+    "pytest-cov>=6,<7"
 ]
 
 [tool.ruff]
@@ -72,3 +68,13 @@ testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
 asyncio_mode = "auto"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "celery*"]
+exclude = ["tests*"]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+]
