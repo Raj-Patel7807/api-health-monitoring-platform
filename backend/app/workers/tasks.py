@@ -25,17 +25,17 @@ except ImportError:  # pragma: no cover
         pass
 
 
-from sqlalchemy.exc import OperationalError as DatabaseOperationalError
+import uuid
 
-from app.db.session import get_db_session
-from app.modules.monitors.scheduler import find_and_schedule_due_monitors
-from app.workers.celery_app import celery_app
-from app.db.session import create_database_engine
+from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 from sqlalchemy.orm import sessionmaker
+
+from app.db.session import create_database_engine, get_db_session
+from app.models.delivery import DeliveryLog, DeliveryStatus
+from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.services.email_sender import send_email
 from app.services.webhook_sender import send_webhook
-from app.models.delivery import DeliveryLog, DeliveryStatus
-import uuid
+from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ def send_webhook_task(delivery_id: str) -> str:
     url = payload.get("url")
     event_type = payload.get("event_type", "unknown")
     body = payload.get("payload", {})
-    result_id = send_webhook(url=url, payload={"event_type": event_type, **body})
+    send_webhook(url=url, payload={"event_type": event_type, **body})
     # Update status based on send_webhook return – it logs itself
     delivery.update_status(DeliveryStatus.success)
     db.commit()

@@ -17,10 +17,11 @@ except ImportError:  # pragma: no cover
     FileSystemLoader = None
     select_autoescape = None
 
-from app.core.config import get_settings
-from app.models.delivery import DeliveryLog, ChannelType, DeliveryStatus
-from app.db.session import create_database_engine
 from sqlalchemy.orm import sessionmaker
+
+from app.core.config import get_settings
+from app.db.session import create_database_engine
+from app.models.delivery import ChannelType, DeliveryLog, DeliveryStatus
 
 settings = get_settings()
 templates_path = os.path.join(os.path.dirname(__file__), "..", "templates", "email")
@@ -37,12 +38,20 @@ SessionLocal = sessionmaker(bind=create_database_engine())
 
 async def send_email(to: str, subject: str, template_name: str, context: dict) -> str:
     """Send an email and record a DeliveryLog entry.
-    The ``context`` dict should contain any variables used by the Jinja2 template and may include ``event_type``.
+
+    The ``context`` dict contains variables used by the Jinja2
+    template and may include ``event_type``.
     """
     template = env.get_template(template_name)
     html_body = template.render(**context)
 
-    message = f"Subject: {subject}\nFrom: {settings.email_from}\nTo: {to}\nContent-Type: text/html\n\n{html_body}"
+    message = (
+        f"Subject: {subject}\n"
+        f"From: {settings.email_from}\n"
+        f"To: {to}\n"
+        f"Content-Type: text/html\n\n"
+        f"{html_body}"
+    )
 
     delivery_id = str(uuid.uuid4())
     db = SessionLocal()

@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
 import uuid
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
 from app.db.session import create_database_engine
-from app.models.delivery import DeliveryLog, DeliveryStatus, ChannelType
-from app.core.config import get_settings
+from app.models.delivery import ChannelType, DeliveryLog, DeliveryStatus
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 
@@ -20,10 +19,10 @@ def get_db():
         db.close()
 
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=list[dict])
 def list_deliveries(
-    status: Optional[DeliveryStatus] = Query(None),
-    channel: Optional[ChannelType] = Query(None),
+    status: DeliveryStatus | None = Query(None),
+    channel: ChannelType | None = Query(None),
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),

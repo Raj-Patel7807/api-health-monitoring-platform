@@ -37,6 +37,8 @@ target-version = "py312"
 
 [tool.ruff.lint.per-file-ignores]
 "database/verify_schema.py" = ["E501"]
+"app/api/*.py" = ["B008"]
+"app/models/delivery.py" = ["UP042"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
@@ -79,3 +81,6 @@ dev = [
     "aiosqlite>=0.22.1",
     "ruff>=0.17.3",
 ]
+
+
+

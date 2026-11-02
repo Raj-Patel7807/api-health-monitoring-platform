@@ -1,7 +1,9 @@
-from sqlalchemy import Column, String, Integer, DateTime, Enum, JSON, func
-from sqlalchemy.dialects.postgresql import UUID
 import enum
 import uuid
+
+from sqlalchemy import JSON, Column, DateTime, Enum, Integer, String, func
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.db.session import Base
 
 

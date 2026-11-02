@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-import uuid
 
 from app.workers.tasks import send_email_task, send_webhook_task
 
