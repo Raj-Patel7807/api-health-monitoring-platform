@@ -1,32 +1,36 @@
+from __future__ import annotations
+
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.session import create_database_engine
 from app.models.delivery import ChannelType, DeliveryLog, DeliveryStatus
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 
-SessionLocal = Session(bind=create_database_engine())
+_engine = create_database_engine()
+_SessionLocal = sessionmaker(bind=_engine)
 
 
-def get_db():
-    db = SessionLocal()
+def get_db() -> Any:
+    db = _SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
 
-@router.get("/", response_model=list[dict])
+@router.get("/", response_model=list[dict[str, Any]])
 def list_deliveries(
     status: DeliveryStatus | None = Query(None),
     channel: ChannelType | None = Query(None),
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
-):
+) -> list[dict[str, Any]]:
     query = db.query(DeliveryLog)
     if status:
         query = query.filter(DeliveryLog.status == status)
@@ -47,8 +51,8 @@ def list_deliveries(
     ]
 
 
-@router.get("/{delivery_id}", response_model=dict)
-def get_delivery(delivery_id: str, db: Session = Depends(get_db)):
+@router.get("/{delivery_id}", response_model=dict[str, Any])
+def get_delivery(delivery_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise HTTPException(status_code=404, detail="Delivery not found")
@@ -69,14 +73,14 @@ def get_delivery(delivery_id: str, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/{delivery_id}/replay", response_model=dict)
-def replay_delivery(delivery_id: str, db: Session = Depends(get_db)):
+@router.post("/{delivery_id}/replay", response_model=dict[str, Any])
+def replay_delivery(delivery_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise HTTPException(status_code=404, detail="Delivery not found")
     # Reset attempt count and status, then enqueue Celery task
-    delivery.attempt_count = 0
-    delivery.status = DeliveryStatus.retrying
+    delivery.attempt_count = 0  # type: ignore[assignment]
+    delivery.status = DeliveryStatus.retrying  # type: ignore[assignment]
     db.commit()
     from app.workers.tasks import replay_delivery_task
 

@@ -1,32 +1,12 @@
+from __future__ import annotations
+
+import asyncio
 import logging
-
-try:
-    from celery import Task
-except ImportError:  # pragma: no cover
-
-    class Task:  # minimal stub
-        def __init__(self, *args, **kwargs):
-            pass
-
-
-try:
-    from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore
-except ImportError:  # pragma: no cover
-
-    class BrokerOperationalError(Exception):
-        pass
-
-
-try:
-    from redis.exceptions import ConnectionError as RedisConnectionError
-except ImportError:  # pragma: no cover
-
-    class RedisConnectionError(Exception):
-        pass
-
-
 import uuid
+from typing import Any
 
+from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
+from redis.exceptions import ConnectionError as RedisConnectionError  # type: ignore[import-untyped]
 from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -36,11 +16,12 @@ from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.services.email_sender import send_email
 from app.services.webhook_sender import send_webhook
 from app.workers.celery_app import celery_app
+from celery import Task  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[misc]
     bind=True,
     name="app.workers.tasks.schedule_due_monitors",
     max_retries=3,
@@ -56,16 +37,12 @@ logger = logging.getLogger(__name__)
     retry_jitter=True,
 )
 def schedule_due_monitors(self: Task) -> list[str]:
-    """Find due monitors and dispatch them with automatic exponential retries.
-
-    Celery handles retry countdown, jitter, and logging through task signals.
-    Scheduled timestamps remain in PostgreSQL across worker restarts.
-    """
+    """Find due monitors and dispatch them with automatic exponential retries."""
     with get_db_session() as session:
-        return find_and_schedule_due_monitors(session)
+        return find_and_schedule_due_monitors(session)  # type: ignore[return-value]
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[misc]
     bind=True,
     name="app.workers.tasks.run_health_check",
     acks_late=True,
@@ -73,13 +50,7 @@ def schedule_due_monitors(self: Task) -> list[str]:
     max_retries=3,
 )
 def run_health_check(self: Task, monitor_id: str) -> str:
-    """Execute a health check for the given monitor.
-
-    Classifies timeout, wrong status, connection error, and SSL failure.
-    Retries up to 3 times on unexpected worker errors, not on check failures.
-    Configured with late acknowledgment and reject-on-worker-lost so a worker crash
-    causes the unacknowledged task to be safely requeued.
-    """
+    """Execute a health check for the given monitor."""
     from app.modules.monitors.checker import check_monitor_by_id
 
     try:
@@ -87,10 +58,10 @@ def run_health_check(self: Task, monitor_id: str) -> str:
         return monitor_id
     except Exception as exc:
         logger.exception("Unexpected error running health check for monitor %s", monitor_id)
-        raise self.retry(exc=exc, countdown=5) from exc
+        raise self.retry(exc=exc, countdown=5) from exc  # type: ignore[attr-defined]
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[misc]
     bind=True,
     name="app.workers.tasks.dispatch_notification",
     max_retries=3,
@@ -98,14 +69,11 @@ def run_health_check(self: Task, monitor_id: str) -> str:
     retry_jitter=True,
 )
 def dispatch_notification(self: Task, delivery_id: str) -> str:
-    """Reserve notification delivery work without contacting a provider yet.
-
-    Supports up to 3 retries with backoff per FR8 / AC-12.2.
-    """
+    """Reserve notification delivery work without contacting a provider yet."""
     return delivery_id
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[misc]
     bind=True,
     name="app.workers.tasks.analyze_incident",
     max_retries=2,
@@ -116,7 +84,7 @@ def analyze_incident(self: Task, incident_id: str) -> str:
     return incident_id
 
 
-@celery_app.task(name="app.workers.tasks.send_email_task")
+@celery_app.task(name="app.workers.tasks.send_email_task")  # type: ignore[misc]
 def send_email_task(delivery_id: str) -> str:
     """Celery task to send an email based on a DeliveryLog record."""
     db_engine = create_database_engine()
@@ -125,12 +93,14 @@ def send_email_task(delivery_id: str) -> str:
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise ValueError(f"Delivery {delivery_id} not found")
-    # Assume delivery.request_payload contains keys: to, subject, template_data
-    payload = delivery.request_payload
-    result = send_email(
-        to=payload["to"], subject=payload["subject"], template_data=payload.get("template_data", {})
+    payload: dict[str, Any] = dict(delivery.request_payload) if delivery.request_payload else {}
+    to: str = str(payload.get("to", ""))
+    subject: str = str(payload.get("subject", ""))
+    template_name: str = str(payload.get("template_name", "default.html"))
+    context: dict[str, Any] = payload.get("context", {})
+    result = asyncio.get_event_loop().run_until_complete(
+        send_email(to=to, subject=subject, template_name=template_name, context=context)
     )
-    # Update delivery status based on result
     if result:
         delivery.update_status(DeliveryStatus.success)
     else:
@@ -140,7 +110,7 @@ def send_email_task(delivery_id: str) -> str:
     return delivery_id
 
 
-@celery_app.task(name="app.workers.tasks.send_webhook_task")
+@celery_app.task(name="app.workers.tasks.send_webhook_task")  # type: ignore[misc]
 def send_webhook_task(delivery_id: str) -> str:
     """Celery task to send a webhook based on a DeliveryLog record."""
     db_engine = create_database_engine()
@@ -149,13 +119,32 @@ def send_webhook_task(delivery_id: str) -> str:
     delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise ValueError(f"Delivery {delivery_id} not found")
-    payload = delivery.request_payload
-    url = payload.get("url")
-    event_type = payload.get("event_type", "unknown")
-    body = payload.get("payload", {})
-    send_webhook(url=url, payload={"event_type": event_type, **body})
-    # Update status based on send_webhook return – it logs itself
+    payload: dict[str, Any] = dict(delivery.request_payload) if delivery.request_payload else {}
+    url: str = str(payload.get("url", ""))
+    event_type: str = str(payload.get("event_type", "unknown"))
+    body: dict[str, Any] = payload.get("payload", {})
+    asyncio.get_event_loop().run_until_complete(
+        send_webhook(url=url, payload={"event_type": event_type, **body})
+    )
     delivery.update_status(DeliveryStatus.success)
     db.commit()
     db.close()
+    return delivery_id
+
+
+@celery_app.task(name="app.workers.tasks.replay_delivery_task")  # type: ignore[misc]
+def replay_delivery_task(delivery_id: str) -> str:
+    """Re-dispatch a delivery by its id (email or webhook)."""
+    db_engine = create_database_engine()
+    SessionLocal = sessionmaker(bind=db_engine)
+    db = SessionLocal()
+    delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
+    if not delivery:
+        raise ValueError(f"Delivery {delivery_id} not found")
+    channel = str(delivery.channel_type)
+    db.close()
+    if "email" in channel:
+        send_email_task.delay(delivery_id)
+    else:
+        send_webhook_task.delay(delivery_id)
     return delivery_id

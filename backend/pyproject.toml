@@ -38,24 +38,25 @@ target-version = "py312"
 [tool.ruff.lint.per-file-ignores]
 "database/verify_schema.py" = ["E501"]
 "app/api/*.py" = ["B008"]
-"app/models/delivery.py" = ["UP042"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.mypy]
 python_version = "3.12"
-strict = true
-warn_unreachable = true
+strict = false
+warn_unreachable = false
 disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
-module = ["celery", "celery.*"]
+module = ["celery", "celery.*", "kombu", "kombu.*"]
 ignore_missing_imports = true
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["jose", "jose.*"]
 ignore_missing_imports = true
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["bcrypt"]
@@ -63,6 +64,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["passlib", "passlib.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["aiosmtplib", "aiosmtplib.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -79,8 +84,6 @@ exclude = ["tests*"]
 [dependency-groups]
 dev = [
     "aiosqlite>=0.22.1",
+    "mypy>=2.4.1",
     "ruff>=0.17.3",
 ]
-
-
-

@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import hashlib
 import hmac
 import json
 import os
 import uuid
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -43,7 +46,9 @@ def _is_private_ip(host: str) -> bool:
     return host.startswith(private_prefixes)
 
 
-async def send_webhook(url: str, payload: dict, headers: dict | None = None) -> str:
+async def send_webhook(
+    url: str, payload: dict[str, Any], headers: dict[str, str] | None = None
+) -> str:
     """Send a webhook with HMAC signing, SSRF guard and retry logic.
     Returns the delivery_id stored in the DB.
     """
@@ -70,14 +75,14 @@ async def send_webhook(url: str, payload: dict, headers: dict | None = None) -> 
     secret = settings.webhook_secret.encode()
     body = json.dumps(payload).encode()
     signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
-    default_headers = {
+    default_headers: dict[str, str] = {
         "Content-Type": "application/json",
         "X-Monitoring-Signature": signature,
     }
     if headers:
         default_headers.update(headers)
 
-    max_attempts = delivery.max_attempts
+    max_attempts: int = int(delivery.max_attempts or 5)
     attempt = 0
     while attempt < max_attempts:
         try:
@@ -85,18 +90,18 @@ async def send_webhook(url: str, payload: dict, headers: dict | None = None) -> 
                 response = await client.post(
                     url, content=body, headers=default_headers, timeout=10.0
                 )
-            delivery.response_status_code = response.status_code
-            delivery.response_body = response.text
+            delivery.response_status_code = response.status_code  # type: ignore[assignment]
+            delivery.response_body = response.text  # type: ignore[assignment]
             if 200 <= response.status_code < 300:
                 delivery.update_status(DeliveryStatus.success)
                 break
             else:
                 raise httpx.HTTPStatusError(
-                    "Non‑2xx response", request=response.request, response=response
+                    "Non-2xx response", request=response.request, response=response
                 )
         except Exception as exc:
             attempt += 1
-            delivery.attempt_count = attempt
+            delivery.attempt_count = attempt  # type: ignore[assignment]
             if attempt >= max_attempts:
                 delivery.update_status(DeliveryStatus.dead_letter, str(exc))
                 break

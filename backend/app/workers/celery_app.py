@@ -1,41 +1,40 @@
+from __future__ import annotations
+
+from typing import Any
+
 try:
-    from celery import Celery
+    from celery import Celery  # type: ignore[import-untyped]
 except ImportError:  # pragma: no cover
 
-    class _Conf:
-        pass
+    class Celery:  # type: ignore[no-redef]
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            self.conf: Any = type("_Conf", (), {})()
 
-    class Celery:
-        def __init__(self, *args, **kwargs):
-            self.conf = _Conf()
-
-        def task(self, *decorator_args, **decorator_kwargs):
-            def decorator(func):
+        def task(self, *decorator_args: Any, **decorator_kwargs: Any) -> Any:
+            def decorator(func: Any) -> Any:
                 class SimpleTask:
-                    def __init__(self):
+                    def __init__(self) -> None:
                         for k, v in decorator_kwargs.items():
                             setattr(self, k, v)
 
-                    def __call__(self, *args, **kwargs):
+                    def __call__(self, *args: Any, **kwargs: Any) -> Any:
                         return func(self, *args, **kwargs)
 
-                    def run(self, *args, **kwargs):
+                    def run(self, *args: Any, **kwargs: Any) -> Any:
                         return func(self, *args, **kwargs)
 
-                    def retry(self, *args, **kwargs):
+                    def retry(self, *args: Any, **kwargs: Any) -> Any:
                         raise NotImplementedError("retry stub not implemented")
 
-                    def apply(self, *args, **kwargs):
-                        if kwargs.get("throw"):
-                            return self.run(*args, **kwargs)
+                    def apply(self, *args: Any, **kwargs: Any) -> Any:
                         return self.run(*args, **kwargs)
 
                 return SimpleTask()
 
             return decorator
 
-        def __getattr__(self, name):
-            def _dummy(*args, **kwargs):
+        def __getattr__(self, name: str) -> Any:
+            def _dummy(*args: Any, **kwargs: Any) -> None:
                 pass
 
             return _dummy
@@ -62,13 +61,8 @@ celery_app.conf.task_routes = {
 }
 
 # Worker resilience, crash safety, and acknowledgment
-# task_acks_late ensures tasks are acknowledged only after completion
 celery_app.conf.task_acks_late = True
-# task_reject_on_worker_lost ensures that if a worker process crashes or is killed,
-# the task is rejected back to the broker and requeued rather than lost
 celery_app.conf.task_reject_on_worker_lost = True
-# worker_prefetch_multiplier=1 prevents a worker from hoarding tasks
-# that could be delayed if the worker crashes
 celery_app.conf.worker_prefetch_multiplier = 1
 
 # Observability and result backend configuration

@@ -1,22 +1,11 @@
+from __future__ import annotations
+
 import os
 import uuid
+from typing import Any
 
-try:
-    from aiosmtplib import send
-except ImportError:  # pragma: no cover
-
-    async def send(*args, **kwargs):
-        # No-op stub for testing environment
-        return None
-
-
-try:
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-except ImportError:  # pragma: no cover
-    Environment = None
-    FileSystemLoader = None
-    select_autoescape = None
-
+from aiosmtplib import send  # type: ignore[import-untyped]
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
@@ -25,18 +14,15 @@ from app.models.delivery import ChannelType, DeliveryLog, DeliveryStatus
 
 settings = get_settings()
 templates_path = os.path.join(os.path.dirname(__file__), "..", "templates", "email")
-if Environment:
-    env = Environment(
-        loader=FileSystemLoader(templates_path),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-else:
-    env = None
+env = Environment(
+    loader=FileSystemLoader(templates_path),
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 SessionLocal = sessionmaker(bind=create_database_engine())
 
 
-async def send_email(to: str, subject: str, template_name: str, context: dict) -> str:
+async def send_email(to: str, subject: str, template_name: str, context: dict[str, Any]) -> str:
     """Send an email and record a DeliveryLog entry.
 
     The ``context`` dict contains variables used by the Jinja2
@@ -69,7 +55,7 @@ async def send_email(to: str, subject: str, template_name: str, context: dict) -
     db.refresh(delivery)
 
     try:
-        await send(
+        await send(  # type: ignore[call-arg]
             message,
             hostname=settings.smtp_host,
             port=settings.smtp_port,
