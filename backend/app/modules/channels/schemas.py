@@ -9,6 +9,7 @@ Secret validation rules per API.md:
 The raw secret is write-only and is never returned in any response.
 """
 
+import json
 import re
 from datetime import datetime
 from ipaddress import AddressValueError, IPv4Address, IPv6Address
@@ -42,21 +43,39 @@ _PRIVATE_PREFIXES = (
 
 def _is_private_host(host: str) -> bool:
     """Return True for localhost, loopback, and RFC-1918 addresses."""
-    lower = host.lower().split(":")[0]  # strip port if present
-    if lower in ("localhost", "::1"):
+    cleaned = host.lower().strip("[]")
+    if ":" in cleaned and cleaned.count(":") == 1:
+        cleaned = cleaned.split(":")[0]
+    if cleaned in ("localhost", "::1", "0.0.0.0") or cleaned.endswith(
+        (".localhost", ".local", ".internal")
+    ):
         return True
     for pfx in _PRIVATE_PREFIXES:
-        if lower.startswith(pfx):
+        if cleaned.startswith(pfx):
             return True
     # Numeric IP check
     try:
-        addr = IPv4Address(lower)
-        return addr.is_private or addr.is_loopback or addr.is_link_local
+        addr = IPv4Address(cleaned)
+        return (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_unspecified
+            or addr.is_reserved
+            or addr.is_multicast
+        )
     except AddressValueError:
         pass
     try:
-        addr6 = IPv6Address(lower)
-        return addr6.is_private or addr6.is_loopback or addr6.is_link_local
+        addr6 = IPv6Address(cleaned)
+        return (
+            addr6.is_private
+            or addr6.is_loopback
+            or addr6.is_link_local
+            or addr6.is_unspecified
+            or addr6.is_reserved
+            or addr6.is_multicast
+        )
     except AddressValueError:
         pass
     return False
@@ -188,9 +207,24 @@ class ChannelResponse(BaseModel):
     monitor_id: UUID | None
     is_enabled: bool
     secret_display_hint: str | None
-    configuration: Any
+    configuration: dict[str, Any]
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("configuration", mode="before")
+    @classmethod
+    def parse_configuration(cls, v: Any) -> dict[str, Any]:
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, dict):
+                    return parsed
+                return {}
+            except Exception:
+                return {}
+        if isinstance(v, dict):
+            return v
+        return {}
 
 
 class ChannelListResponse(BaseModel):

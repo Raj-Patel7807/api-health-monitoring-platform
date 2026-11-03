@@ -1,18 +1,24 @@
 """Database service functions for notification channel lifecycle (US-03)."""
 
 import json
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.channels.models import NotificationChannel
+from app.core.crypto import EncryptionConfigError, encrypt
+from app.modules.channels.models import ChannelType, NotificationChannel
 from app.modules.channels.schemas import (
     ChannelCreateRequest,
     ChannelUpdateRequest,
     _make_display_hint,
+    _validate_secret,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def create_channel(
@@ -20,9 +26,23 @@ async def create_channel(
     team_id: UUID,
     data: ChannelCreateRequest,
 ) -> NotificationChannel:
-    """Persist a new channel.  The raw secret is discarded; only the hint is kept."""
+    """Persist a new channel with an AES-256-GCM encrypted secret and display hint.
+
+    The secret is encrypted using the application ENCRYPTION_KEY with a random 12-byte nonce
+    and stored in secret_ref. Plaintext secrets are never stored.
+    """
     now = datetime.now(UTC)
     hint = _make_display_hint(data.type, data.secret_value)
+
+    try:
+        encrypted_secret = encrypt(data.secret_value)
+    except EncryptionConfigError:
+        logger.error("Encryption configuration error while creating notification channel.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encryption service is not properly configured.",
+        ) from None
+
     channel = NotificationChannel(
         team_id=team_id,
         monitor_id=data.monitor_id,
@@ -30,6 +50,7 @@ async def create_channel(
         name=data.name,
         is_enabled=True,
         configuration=json.dumps(data.configuration),
+        secret_ref=encrypted_secret,
         secret_display_hint=hint,
         created_at=now,
         updated_at=now,
@@ -87,10 +108,11 @@ async def update_channel(
     data: ChannelUpdateRequest,
     channel_type_str: str,
 ) -> NotificationChannel:
-    """Partially update a channel. Rotates secret_display_hint when secret_value is provided."""
-    from app.modules.channels.models import ChannelType
-    from app.modules.channels.schemas import _validate_secret
+    """Partially update a channel.
 
+    Encrypts new secret and rotates secret_display_hint when secret_value is provided.
+    Preserves the existing encrypted secret and hint when secret_value is omitted.
+    """
     if data.name is not None:
         channel.name = data.name
     if data.is_enabled is not None:
@@ -101,8 +123,15 @@ async def update_channel(
         # Validate new secret against the channel's original type (type cannot change).
         channel_type = ChannelType(channel_type_str)
         validated = _validate_secret(channel_type, data.secret_value)
+        try:
+            channel.secret_ref = encrypt(validated)
+        except EncryptionConfigError:
+            logger.error("Encryption configuration error while updating notification channel.")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Encryption service is not properly configured.",
+            ) from None
         channel.secret_display_hint = _make_display_hint(channel_type, validated)
-        # secret_ref intentionally not updated here — vault rotation is out of scope for MVP.
 
     channel.updated_at = datetime.now(UTC)
     await db.flush()

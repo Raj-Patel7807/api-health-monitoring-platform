@@ -44,6 +44,16 @@ async def list_channels(
     ] = None,
 ) -> ChannelListResponse:
     """List active notification channels for the caller's team."""
+    if monitor_id is not None:
+        from app.modules.monitors import service as mon_service
+
+        monitor = await mon_service.get_monitor(db, context.team.id, monitor_id)
+        if monitor is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Monitor not found.",
+            )
+
     scope_team_only = scope == "team"
     items = await service.list_channels(
         db,
@@ -60,7 +70,10 @@ async def create_channel(
     context: Annotated[TeamContext, Depends(_require_channel_access)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChannelResponse:
-    """Create a notification channel.  The secret is validated then discarded."""
+    """Create a notification channel.
+
+    The secret is validated, encrypted with AES-256-GCM, and stored safely.
+    """
     if body.monitor_id is not None:
         # Verify the monitor exists and belongs to this team.
         from app.modules.monitors import service as mon_service

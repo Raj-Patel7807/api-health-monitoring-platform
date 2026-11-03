@@ -1,4 +1,6 @@
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -8,13 +10,22 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import router
 from app.core.config import get_settings
+from app.core.crypto import validate_encryption_key
 from app.core.logging import configure_logging
 
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="API Health Monitor", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    """Validate required application secrets and configuration at startup."""
+    validate_encryption_key()
+    yield
+
+
+app = FastAPI(title="API Health Monitor", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -34,13 +45,32 @@ async def add_request_id(request: Request, call_next: object) -> object:
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = exc.errors()
+    # Ensure sensitive inputs (secret_value, passwords, tokens) are never echoed in error bodies
+    sanitized_errors = []
+    for err in errors:
+        cleaned = dict(err)
+        loc = [str(x).lower() for x in err.get("loc", ())]
+        if any(k in loc for k in ("secret_value", "password", "token")):
+            if "input" in cleaned:
+                cleaned["input"] = "[REDACTED]"
+        elif isinstance(cleaned.get("input"), dict):
+            sanitized_input = {}
+            for k, v in cleaned["input"].items():
+                if any(s in str(k).lower() for s in ("secret", "password", "token")):
+                    sanitized_input[k] = "[REDACTED]"
+                else:
+                    sanitized_input[k] = v
+            cleaned["input"] = sanitized_input
+        sanitized_errors.append(cleaned)
+
     return JSONResponse(
         status_code=422,
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Request data is invalid.",
-                "details": exc.errors(),
+                "details": sanitized_errors,
             }
         },
     )
