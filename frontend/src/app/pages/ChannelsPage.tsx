@@ -21,6 +21,7 @@ import {
 import type { Channel } from "../../lib/channels";
 import { CHANNEL_TYPE_LABELS } from "../../lib/channels";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { AppNav } from "../components/AppNav";
 import { ToastContainer } from "../components/Toast";
 import { useToast } from "../components/useToast";
 import { useCurrentRole } from "../hooks/useCurrentRole";
@@ -107,6 +108,7 @@ export function ChannelsPage() {
     return (
         <>
             <main className="monitors-page">
+                <AppNav />
                 <header className="monitors-header">
                     <div className="monitors-header-text">
                         <h1>Notification Channels</h1>

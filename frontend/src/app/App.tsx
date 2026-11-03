@@ -10,6 +10,8 @@ import { MonitorFormPage } from "./pages/MonitorFormPage";
 import { MonitorDetailPage } from "./pages/MonitorDetailPage";
 import { ChannelsPage } from "./pages/ChannelsPage";
 import { ChannelFormPage } from "./pages/ChannelFormPage";
+import { IncidentsPage } from "./pages/IncidentsPage";
+import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 
 const STACK = [
     {
@@ -196,6 +198,11 @@ export function App() {
                 <Route
                     path="/channels/:channelId/edit"
                     element={<ChannelFormPage />}
+                />
+                <Route path="/incidents" element={<IncidentsPage />} />
+                <Route
+                    path="/incidents/:incidentId"
+                    element={<IncidentDetailPage />}
                 />
             </Route>
         </Routes>

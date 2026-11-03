@@ -9,6 +9,7 @@ import {
 
 import { listMonitors, deleteMonitor, ApiError } from "../../lib/monitorsApi";
 import type { Monitor } from "../../lib/monitors";
+import { AppNav } from "../components/AppNav";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ToastContainer } from "../components/Toast";
 import { useToast } from "../components/useToast";
@@ -83,6 +84,7 @@ export function MonitorsPage() {
     return (
         <>
             <main className="monitors-page">
+                <AppNav />
                 <header className="monitors-header">
                     <div className="monitors-header-text">
                         <h1>Monitors</h1>
