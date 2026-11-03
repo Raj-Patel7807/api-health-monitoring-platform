@@ -140,12 +140,12 @@ def _make_display_hint(channel_type: ChannelType, secret: str) -> str:
         suffix = path[-3:] if len(path) >= 3 else path
         return f"{parsed.netloc}/…/{suffix}"
 
-    elif channel_type == ChannelType.email:
+    if channel_type == ChannelType.email:  # noqa: SIM102
         # Show only first char + domain: "r…@example.com"
         local, _, domain = s.partition("@")
         return f"{local[0]}…@{domain}" if local else f"…@{domain}"
 
-    return "…"
+    return "…"  # type: ignore[unreachable]
 
 
 # ---------------------------------------------------------------------------

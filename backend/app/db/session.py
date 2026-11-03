@@ -15,6 +15,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
 
+from .base import Base
+
+__all__ = [
+    "Base",
+    "create_database_engine",
+    "_async_url",
+    "_make_async_session_factory",
+    "get_async_session_factory",
+    "get_db",
+    "get_session_factory",
+    "get_db_session",
+]
+
 
 def create_database_engine() -> Engine:
     """Create the synchronous SQLAlchemy engine used by migrations."""

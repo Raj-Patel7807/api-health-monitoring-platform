@@ -31,3 +31,6 @@ test-results/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# Python package build metadata
+*.egg-info/
