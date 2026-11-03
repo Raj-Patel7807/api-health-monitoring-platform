@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 
 import { clearTokens } from "../../lib/auth";
+import { AppNav } from "../components/AppNav";
 import "./auth.css";
+import "./incidents.css";
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -13,6 +15,7 @@ export function DashboardPage() {
 
     return (
         <main className="auth-page">
+            <AppNav />
             <div className="auth-card">
                 <h1>Dashboard</h1>
                 <p className="auth-sub">You are logged in.</p>

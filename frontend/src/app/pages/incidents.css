@@ -1,0 +1,296 @@
+/* ─── Incidents & Alert Deliveries Styles (US-09, US-10, US-11) ─────────────── */
+
+.incidents-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.incidents-filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.incidents-filter-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+}
+
+.incidents-select {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+.incidents-select:focus {
+    outline: none;
+    border-color: var(--clr-accent);
+    box-shadow: 0 0 0 2px var(--clr-accent-soft);
+}
+
+.incidents-duration-open {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--clr-red);
+    font-weight: 600;
+}
+
+.incidents-duration-resolved {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--clr-text-secondary);
+}
+
+.incidents-failures-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    background: var(--clr-red-soft);
+    color: var(--clr-red);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.incidents-recoveries-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    background: var(--clr-green-soft);
+    color: var(--clr-green);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ── Live Polling Indicator ─────────────────────────────────────────────────── */
+
+.incidents-polling-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--clr-text-muted);
+    background: var(--clr-bg-elevated);
+    padding: var(--space-1) var(--space-3);
+    border-radius: 9999px;
+    border: 1px solid var(--clr-border);
+}
+
+.incidents-polling-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--clr-accent);
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+/* ── Deliveries Panel ───────────────────────────────────────────────────────── */
+
+.deliveries-section {
+    margin-top: var(--space-8);
+    border-top: 1px solid var(--clr-border);
+    padding-top: var(--space-6);
+}
+
+.deliveries-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.deliveries-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    margin: 0;
+}
+
+.deliveries-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.delivery-card {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    transition: border-color var(--transition-fast);
+}
+
+.delivery-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.delivery-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.delivery-card-channel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    font-size: 0.95rem;
+}
+
+.delivery-card-badges {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.delivery-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: 0.8125rem;
+    color: var(--clr-text-secondary);
+}
+
+.delivery-card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* ── Delivery Status Badges ─────────────────────────────────────────────────── */
+
+.delivery-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.delivery-badge--sent {
+    background: var(--clr-green-soft);
+    color: var(--clr-green);
+    border: 1px solid rgba(72, 187, 120, 0.25);
+}
+
+.delivery-badge--pending {
+    background: var(--clr-yellow-soft);
+    color: var(--clr-yellow);
+    border: 1px solid rgba(246, 224, 94, 0.25);
+}
+
+.delivery-badge--failed {
+    background: var(--clr-red-soft);
+    color: var(--clr-red);
+    border: 1px solid rgba(252, 129, 129, 0.25);
+}
+
+/* ── Delivery Error Message Box ─────────────────────────────────────────────── */
+
+.delivery-error-box {
+    background: rgba(252, 129, 129, 0.08);
+    border: 1px solid rgba(252, 129, 129, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--clr-red);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.delivery-error-label {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+    color: var(--clr-red);
+}
+
+.delivery-error-text {
+    font-family: var(--font-mono);
+    word-break: break-all;
+    white-space: pre-wrap;
+    color: var(--clr-text-primary);
+}
+
+/* ── App Navigation Header ──────────────────────────────────────────────────── */
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--clr-bg-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+    margin-bottom: var(--space-6);
+}
+
+.app-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition:
+        color var(--transition-fast),
+        background-color var(--transition-fast);
+}
+
+.app-nav-link:hover {
+    color: var(--clr-text-primary);
+    background: var(--clr-bg-elevated);
+}
+
+.app-nav-link--active {
+    color: var(--clr-accent);
+    background: var(--clr-accent-soft);
+    font-weight: 600;
+}
