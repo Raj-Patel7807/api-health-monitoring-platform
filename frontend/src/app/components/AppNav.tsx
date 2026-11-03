@@ -30,15 +30,6 @@ export function AppNav() {
                 <span aria-hidden="true">🔔</span>
                 <span>Channels</span>
             </NavLink>
-            <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                    `app-nav-link${isActive ? " app-nav-link--active" : ""}`
-                }
-            >
-                <span aria-hidden="true">📊</span>
-                <span>Dashboard</span>
-            </NavLink>
         </nav>
     );
 }

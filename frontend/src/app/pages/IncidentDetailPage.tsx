@@ -9,6 +9,8 @@ import {
     formatDuration,
     formatIncidentDuration,
     type AlertDelivery,
+    type AlertDeliveryListResponse,
+    type IncidentDetail,
 } from "../../lib/incidents";
 import {
     getIncident,
@@ -35,7 +37,7 @@ export function IncidentDetailPage() {
         queryFn: () => getIncident(incidentId!),
         enabled: Boolean(incidentId),
         refetchInterval: (query) => {
-            const data = query.state.data;
+            const data = query.state.data as IncidentDetail | undefined;
             // Incident will also check pending deliveries via shouldPoll below
             return data?.status === "open" ? 20_000 : false;
         },
@@ -57,7 +59,10 @@ export function IncidentDetailPage() {
         enabled: Boolean(incidentId),
         // Poll deliveries every 20 seconds while incident is open OR any delivery is pending
         refetchInterval: (query) => {
-            const deliveries = query.state.data?.items ?? [];
+            const delivData = query.state.data as
+                | AlertDeliveryListResponse
+                | undefined;
+            const deliveries = delivData?.items ?? [];
             const hasPending = deliveries.some((d) => d.status === "pending");
             return isIncidentOpen || hasPending ? 20_000 : false;
         },

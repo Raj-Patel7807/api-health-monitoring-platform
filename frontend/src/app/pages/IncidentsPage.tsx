@@ -8,6 +8,7 @@ import {
     formatIncidentDuration,
     type Incident,
     type IncidentFilterStatus,
+    type IncidentListResponse,
 } from "../../lib/incidents";
 import { listIncidents, ApiError } from "../../lib/incidentsApi";
 import { listMonitors } from "../../lib/monitorsApi";
@@ -47,7 +48,8 @@ export function IncidentsPage() {
         placeholderData: keepPreviousData,
         // Refresh every 20 seconds while any incident in the list is open
         refetchInterval: (query) => {
-            const hasOpenIncident = query.state.data?.items.some((i) => i.status === "open");
+            const listData = query.state.data as IncidentListResponse | undefined;
+            const hasOpenIncident = listData?.items?.some((i) => i.status === "open");
             return hasOpenIncident ? 20_000 : false;
         },
     });
