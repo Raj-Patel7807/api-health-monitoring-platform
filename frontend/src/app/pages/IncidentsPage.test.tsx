@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
@@ -106,9 +106,10 @@ describe("IncidentsPage", () => {
         expect(await screen.findByText("Payment Gateway")).toBeInTheDocument();
         expect(screen.getByText("Auth Service")).toBeInTheDocument();
 
-        // Status badges
-        expect(screen.getByText("Open")).toBeInTheDocument();
-        expect(screen.getByText("Resolved")).toBeInTheDocument();
+        // Status badges in table
+        const table = screen.getByRole("table");
+        expect(within(table).getByText("Open")).toBeInTheDocument();
+        expect(within(table).getByText("Resolved")).toBeInTheDocument();
 
         // Open incident shows how long it has been open
         expect(screen.getByText(/Open for/i)).toBeInTheDocument();
@@ -255,7 +256,8 @@ describe("IncidentsPage", () => {
 
         renderApp();
 
-        expect(await screen.findByText("Database Cluster")).toBeInTheDocument();
+        const table = await screen.findByRole("table");
+        expect(within(table).getByText("Database Cluster")).toBeInTheDocument();
 
         // Change status filter to 'open'
         const statusSelect = screen.getByLabelText("Filter by status");
@@ -357,7 +359,23 @@ describe("IncidentsPage", () => {
         let attempts = 0;
         vi.stubGlobal(
             "fetch",
-            vi.fn().mockImplementation(() => {
+            vi.fn().mockImplementation((url: string) => {
+                if (url.includes("/api/v1/monitors")) {
+                    return Promise.resolve(
+                        new Response(
+                            JSON.stringify({
+                                items: [],
+                                page: 1,
+                                page_size: 100,
+                                total: 0,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
+                        ),
+                    );
+                }
                 attempts++;
                 if (attempts === 1) {
                     return Promise.reject(new Error("Network connection lost"));
