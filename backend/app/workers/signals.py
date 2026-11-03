@@ -1,16 +1,27 @@
 """Celery signal handlers for task lifecycle, failure recording, and retry logging."""
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 
-from celery.signals import task_failure, task_retry
-
 from app.workers.failure import record_failed_task
+
+try:
+    from celery.signals import task_failure, task_retry  # type: ignore[import-untyped]
+except ImportError:  # pragma: no cover
+
+    class _Signal:
+        def connect(self, func: Any) -> Any:
+            return func
+
+    task_failure = _Signal()  # type: ignore[assignment]
+    task_retry = _Signal()  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
 
-@task_failure.connect
+@task_failure.connect  # type: ignore[misc]
 def handle_task_failure(
     sender: Any = None,
     task_id: str | None = None,
@@ -21,11 +32,7 @@ def handle_task_failure(
     einfo: Any = None,
     **extra: Any,
 ) -> None:
-    """Record and log task failures when any Celery task fails.
-
-    Satisfies AC-05.6: The platform shall record or log the operational failure
-    so that it can be investigated.
-    """
+    """Record and log task failures when any Celery task fails."""
     if not task_id or exception is None:
         return
 
@@ -44,7 +51,7 @@ def handle_task_failure(
     )
 
 
-@task_retry.connect
+@task_retry.connect  # type: ignore[misc]
 def handle_task_retry(
     sender: Any = None,
     task_id: str | None = None,
