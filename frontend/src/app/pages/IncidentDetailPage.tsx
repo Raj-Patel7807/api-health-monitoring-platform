@@ -93,7 +93,8 @@ export function IncidentDetailPage() {
                     <div className="monitors-state-box" role="alert">
                         <h2>Incident not found</h2>
                         <p>
-                            The requested incident does not exist or belongs to another team.
+                            The requested incident does not exist or belongs to
+                            another team.
                         </p>
                         <Link
                             to="/incidents"
@@ -114,7 +115,11 @@ export function IncidentDetailPage() {
                     ← Back to incidents
                 </Link>
                 <div className="monitors-card">
-                    <div role="status" className="monitors-state-box" aria-live="polite">
+                    <div
+                        role="status"
+                        className="monitors-state-box"
+                        aria-live="polite"
+                    >
                         <span className="spinner" aria-hidden="true" />
                         <p>Loading incident details...</p>
                     </div>
@@ -162,13 +167,18 @@ export function IncidentDetailPage() {
                 <div className="monitors-header-text">
                     <h1>Incident for {incident.monitor_name}</h1>
                     <p className="monitors-subtitle">
-                        Incident ID: <code className="detail-value--mono">{incident.id}</code>
+                        Incident ID:{" "}
+                        <code className="detail-value--mono">
+                            {incident.id}
+                        </code>
                     </p>
                 </div>
                 <div className="delivery-card-badges">
                     <span
                         className={`monitors-chip ${
-                            isOpen ? "monitors-chip--error" : "monitors-chip--ok"
+                            isOpen
+                                ? "monitors-chip--error"
+                                : "monitors-chip--ok"
                         }`}
                         data-testid="incident-status-badge"
                     >
@@ -179,7 +189,10 @@ export function IncidentDetailPage() {
                             className="incidents-polling-indicator"
                             title="Refreshing every 20 seconds while incident is open or delivery is pending"
                         >
-                            <span className="incidents-polling-dot" aria-hidden="true" />
+                            <span
+                                className="incidents-polling-dot"
+                                aria-hidden="true"
+                            />
                             <span>Live</span>
                         </div>
                     )}
@@ -226,7 +239,8 @@ export function IncidentDetailPage() {
                                 </span>
                             ) : (
                                 <span>
-                                    {formatDateTime(incident.resolved_at)} (duration:{" "}
+                                    {formatDateTime(incident.resolved_at)}{" "}
+                                    (duration:{" "}
                                     {formatDuration(
                                         incident.opened_at,
                                         incident.resolved_at,
@@ -262,7 +276,10 @@ export function IncidentDetailPage() {
                     aria-labelledby="deliveries-heading"
                 >
                     <div className="deliveries-section-header">
-                        <h2 id="deliveries-heading" className="deliveries-section-title">
+                        <h2
+                            id="deliveries-heading"
+                            className="deliveries-section-title"
+                        >
                             Alert Deliveries
                         </h2>
                     </div>
@@ -295,85 +312,109 @@ export function IncidentDetailPage() {
                         </div>
                     )}
 
-                    {!deliveriesLoading && !isDeliveriesError && deliveries.length === 0 && (
-                        <div className="monitors-state-box">
-                            <p>No alert deliveries recorded for this incident.</p>
-                        </div>
-                    )}
+                    {!deliveriesLoading &&
+                        !isDeliveriesError &&
+                        deliveries.length === 0 && (
+                            <div className="monitors-state-box">
+                                <p>
+                                    No alert deliveries recorded for this
+                                    incident.
+                                </p>
+                            </div>
+                        )}
 
-                    {!deliveriesLoading && !isDeliveriesError && deliveries.length > 0 && (
-                        <div className="deliveries-list" data-testid="deliveries-list">
-                            {deliveries.map((delivery) => {
-                                const typeIcon =
-                                    CHANNEL_TYPE_ICONS[delivery.channel_type] ?? "📣";
-                                const typeLabel =
-                                    CHANNEL_TYPE_LABELS[delivery.channel_type] ??
-                                    delivery.channel_type;
+                    {!deliveriesLoading &&
+                        !isDeliveriesError &&
+                        deliveries.length > 0 && (
+                            <div
+                                className="deliveries-list"
+                                data-testid="deliveries-list"
+                            >
+                                {deliveries.map((delivery) => {
+                                    const typeIcon =
+                                        CHANNEL_TYPE_ICONS[
+                                            delivery.channel_type
+                                        ] ?? "📣";
+                                    const typeLabel =
+                                        CHANNEL_TYPE_LABELS[
+                                            delivery.channel_type
+                                        ] ?? delivery.channel_type;
 
-                                return (
-                                    <article
-                                        key={delivery.id}
-                                        className="delivery-card"
-                                        data-testid={`delivery-card-${delivery.id}`}
-                                    >
-                                        <div className="delivery-card-top">
-                                            <div className="delivery-card-channel">
-                                                <span aria-hidden="true">{typeIcon}</span>
-                                                <span>{delivery.channel_name}</span>
-                                                <span className="monitors-chip monitors-chip--method">
-                                                    {typeLabel}
-                                                </span>
-                                            </div>
-
-                                            <div className="delivery-card-badges">
-                                                <span className="monitors-chip monitors-chip--method">
-                                                    Event: {delivery.event_type}
-                                                </span>
-                                                <span
-                                                    className={`delivery-badge delivery-badge--${delivery.status}`}
-                                                    data-testid={`delivery-status-${delivery.status}`}
-                                                >
-                                                    {delivery.status}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="delivery-card-meta">
-                                            <div className="delivery-card-meta-item">
-                                                <span>Attempts:</span>
-                                                <strong>{delivery.attempt_count}</strong>
-                                            </div>
-                                            <div className="delivery-card-meta-item">
-                                                <span>Sent At:</span>
-                                                <strong>
-                                                    {delivery.sent_at
-                                                        ? formatDateTime(delivery.sent_at)
-                                                        : "—"}
-                                                </strong>
-                                            </div>
-                                        </div>
-
-                                        {/* Error message for failed delivery */}
-                                        {delivery.status === "failed" &&
-                                            delivery.error_message && (
-                                                <div
-                                                    className="delivery-error-box"
-                                                    role="alert"
-                                                    data-testid="delivery-error-box"
-                                                >
-                                                    <span className="delivery-error-label">
-                                                        Delivery Error
+                                    return (
+                                        <article
+                                            key={delivery.id}
+                                            className="delivery-card"
+                                            data-testid={`delivery-card-${delivery.id}`}
+                                        >
+                                            <div className="delivery-card-top">
+                                                <div className="delivery-card-channel">
+                                                    <span aria-hidden="true">
+                                                        {typeIcon}
                                                     </span>
-                                                    <span className="delivery-error-text">
-                                                        {delivery.error_message}
+                                                    <span>
+                                                        {delivery.channel_name}
+                                                    </span>
+                                                    <span className="monitors-chip monitors-chip--method">
+                                                        {typeLabel}
                                                     </span>
                                                 </div>
-                                            )}
-                                    </article>
-                                );
-                            })}
-                        </div>
-                    )}
+
+                                                <div className="delivery-card-badges">
+                                                    <span className="monitors-chip monitors-chip--method">
+                                                        Event:{" "}
+                                                        {delivery.event_type}
+                                                    </span>
+                                                    <span
+                                                        className={`delivery-badge delivery-badge--${delivery.status}`}
+                                                        data-testid={`delivery-status-${delivery.status}`}
+                                                    >
+                                                        {delivery.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="delivery-card-meta">
+                                                <div className="delivery-card-meta-item">
+                                                    <span>Attempts:</span>
+                                                    <strong>
+                                                        {delivery.attempt_count}
+                                                    </strong>
+                                                </div>
+                                                <div className="delivery-card-meta-item">
+                                                    <span>Sent At:</span>
+                                                    <strong>
+                                                        {delivery.sent_at
+                                                            ? formatDateTime(
+                                                                  delivery.sent_at,
+                                                              )
+                                                            : "—"}
+                                                    </strong>
+                                                </div>
+                                            </div>
+
+                                            {/* Error message for failed delivery */}
+                                            {delivery.status === "failed" &&
+                                                delivery.error_message && (
+                                                    <div
+                                                        className="delivery-error-box"
+                                                        role="alert"
+                                                        data-testid="delivery-error-box"
+                                                    >
+                                                        <span className="delivery-error-label">
+                                                            Delivery Error
+                                                        </span>
+                                                        <span className="delivery-error-text">
+                                                            {
+                                                                delivery.error_message
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                )}
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        )}
                 </section>
             </div>
         </main>

@@ -245,7 +245,8 @@ describe("IncidentDetailPage", () => {
                     status: "failed",
                     attempt_count: 4,
                     sent_at: null,
-                    error_message: "Connection refused: endpoint host unreachable after 4 retries",
+                    error_message:
+                        "Connection refused: endpoint host unreachable after 4 retries",
                     created_at: "2026-10-01T10:01:00Z",
                 },
             ],
@@ -274,12 +275,20 @@ describe("IncidentDetailPage", () => {
         renderApp("/incidents/inc-deliv");
 
         // Wait for deliveries list
-        expect(await screen.findByTestId("deliveries-list")).toBeInTheDocument();
+        expect(
+            await screen.findByTestId("deliveries-list"),
+        ).toBeInTheDocument();
 
         // Verify distinct badges
-        expect(screen.getByTestId("delivery-status-sent")).toHaveTextContent("sent");
-        expect(screen.getByTestId("delivery-status-pending")).toHaveTextContent("pending");
-        expect(screen.getByTestId("delivery-status-failed")).toHaveTextContent("failed");
+        expect(screen.getByTestId("delivery-status-sent")).toHaveTextContent(
+            "sent",
+        );
+        expect(screen.getByTestId("delivery-status-pending")).toHaveTextContent(
+            "pending",
+        );
+        expect(screen.getByTestId("delivery-status-failed")).toHaveTextContent(
+            "failed",
+        );
 
         // Verify failed delivery shows its error message
         const errorBox = screen.getByTestId("delivery-error-box");
@@ -322,7 +331,8 @@ describe("IncidentDetailPage", () => {
 
     it("renders text from the API safely as plain text in detail and delivery views", async () => {
         const xssPayload = "<img src=x onerror=alert('xss')>";
-        const xssErrorMessage = "<b>Danger</b> Error: <script>alert(1)</script>";
+        const xssErrorMessage =
+            "<b>Danger</b> Error: <script>alert(1)</script>";
 
         const mockIncident = {
             id: "inc-xss-detail",

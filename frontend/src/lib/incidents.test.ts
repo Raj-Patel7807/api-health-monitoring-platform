@@ -110,7 +110,11 @@ describe("incidents helpers", () => {
             ];
 
             const sorted = sortIncidentsOpenFirst(incidents);
-            expect(sorted.map((i) => i.id)).toEqual(["inc-3", "inc-2", "inc-1"]);
+            expect(sorted.map((i) => i.id)).toEqual([
+                "inc-3",
+                "inc-2",
+                "inc-1",
+            ]);
         });
     });
 });

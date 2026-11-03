@@ -143,6 +143,8 @@ export function sortIncidentsOpenFirst(incidents: Incident[]): Incident[] {
     return [...incidents].sort((a, b) => {
         if (a.status === "open" && b.status !== "open") return -1;
         if (a.status !== "open" && b.status === "open") return 1;
-        return new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime();
+        return (
+            new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime()
+        );
     });
 }

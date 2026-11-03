@@ -37,7 +37,10 @@ export function IncidentsPage() {
 
     // Query incidents with status and monitor filters
     const { data, isLoading, isError, error, refetch } = useQuery({
-        queryKey: ["incidents", { page, status: statusFilter, monitorId: monitorIdFilter }],
+        queryKey: [
+            "incidents",
+            { page, status: statusFilter, monitorId: monitorIdFilter },
+        ],
         queryFn: () =>
             listIncidents({
                 page,
@@ -48,8 +51,12 @@ export function IncidentsPage() {
         placeholderData: keepPreviousData,
         // Refresh every 20 seconds while any incident in the list is open
         refetchInterval: (query) => {
-            const listData = query.state.data as IncidentListResponse | undefined;
-            const hasOpenIncident = listData?.items?.some((i) => i.status === "open");
+            const listData = query.state.data as
+                | IncidentListResponse
+                | undefined;
+            const hasOpenIncident = listData?.items?.some(
+                (i) => i.status === "open",
+            );
             return hasOpenIncident ? 20_000 : false;
         },
     });
@@ -109,12 +116,19 @@ export function IncidentsPage() {
                 <div className="monitors-header-text">
                     <h1>Incidents</h1>
                     <p className="monitors-subtitle">
-                        Track outages, confirmed failures, and recovery status across your services.
+                        Track outages, confirmed failures, and recovery status
+                        across your services.
                     </p>
                 </div>
                 {hasOpenIncidents && (
-                    <div className="incidents-polling-indicator" title="Refreshing every 20 seconds">
-                        <span className="incidents-polling-dot" aria-hidden="true" />
+                    <div
+                        className="incidents-polling-indicator"
+                        title="Refreshing every 20 seconds"
+                    >
+                        <span
+                            className="incidents-polling-dot"
+                            aria-hidden="true"
+                        />
                         <span>Live updates</span>
                     </div>
                 )}
@@ -124,7 +138,10 @@ export function IncidentsPage() {
                 {/* ── Filters Bar ─────────────────────────────────────────── */}
                 <div className="incidents-filter-bar">
                     <div className="incidents-filter-group">
-                        <label htmlFor="status-filter" className="incidents-filter-label">
+                        <label
+                            htmlFor="status-filter"
+                            className="incidents-filter-label"
+                        >
                             Status:
                         </label>
                         <select
@@ -133,7 +150,9 @@ export function IncidentsPage() {
                             className="incidents-select"
                             value={statusFilter}
                             onChange={(e) =>
-                                handleStatusChange(e.target.value as IncidentFilterStatus)
+                                handleStatusChange(
+                                    e.target.value as IncidentFilterStatus,
+                                )
                             }
                         >
                             <option value="all">All statuses</option>
@@ -143,7 +162,10 @@ export function IncidentsPage() {
                     </div>
 
                     <div className="incidents-filter-group">
-                        <label htmlFor="monitor-filter" className="incidents-filter-label">
+                        <label
+                            htmlFor="monitor-filter"
+                            className="incidents-filter-label"
+                        >
                             Monitor:
                         </label>
                         <select
@@ -151,7 +173,9 @@ export function IncidentsPage() {
                             aria-label="Filter by monitor"
                             className="incidents-select"
                             value={monitorIdFilter}
-                            onChange={(e) => handleMonitorChange(e.target.value)}
+                            onChange={(e) =>
+                                handleMonitorChange(e.target.value)
+                            }
                         >
                             <option value="">All monitors</option>
                             {monitors.map((m) => (
@@ -165,7 +189,11 @@ export function IncidentsPage() {
 
                 {/* ── Loading State ───────────────────────────────────────── */}
                 {isLoading && (
-                    <div role="status" className="monitors-state-box" aria-live="polite">
+                    <div
+                        role="status"
+                        className="monitors-state-box"
+                        aria-live="polite"
+                    >
                         <span className="spinner" aria-hidden="true" />
                         <p>Loading incidents...</p>
                     </div>
@@ -175,7 +203,11 @@ export function IncidentsPage() {
                 {isError && (
                     <div role="alert" className="monitors-state-box">
                         <h2>Could not load incidents</h2>
-                        <p>{error instanceof Error ? error.message : "Something went wrong."}</p>
+                        <p>
+                            {error instanceof Error
+                                ? error.message
+                                : "Something went wrong."}
+                        </p>
                         <button
                             type="button"
                             className="monitors-button monitors-button--secondary"
@@ -215,7 +247,9 @@ export function IncidentsPage() {
                     <>
                         <div className="monitors-table-container">
                             <table className="monitors-table">
-                                <caption className="monitors-sr-only">Incidents list</caption>
+                                <caption className="monitors-sr-only">
+                                    Incidents list
+                                </caption>
                                 <thead>
                                     <tr>
                                         <th scope="col">Monitor</th>
@@ -228,16 +262,22 @@ export function IncidentsPage() {
                                 </thead>
                                 <tbody>
                                     {items.map((incident) => {
-                                        const isOpen = incident.status === "open";
+                                        const isOpen =
+                                            incident.status === "open";
                                         return (
-                                            <tr key={incident.id} data-testid={`incident-row-${incident.id}`}>
+                                            <tr
+                                                key={incident.id}
+                                                data-testid={`incident-row-${incident.id}`}
+                                            >
                                                 <td>
                                                     <div className="monitors-cell-name">
                                                         <Link
                                                             to={`/incidents/${incident.id}`}
                                                             data-testid={`incident-link-${incident.id}`}
                                                         >
-                                                            {incident.monitor_name}
+                                                            {
+                                                                incident.monitor_name
+                                                            }
                                                         </Link>
                                                     </div>
                                                 </td>
@@ -249,10 +289,16 @@ export function IncidentsPage() {
                                                                 : "monitors-chip--ok"
                                                         }`}
                                                     >
-                                                        {isOpen ? "Open" : "Resolved"}
+                                                        {isOpen
+                                                            ? "Open"
+                                                            : "Resolved"}
                                                     </span>
                                                 </td>
-                                                <td>{formatDateTime(incident.opened_at)}</td>
+                                                <td>
+                                                    {formatDateTime(
+                                                        incident.opened_at,
+                                                    )}
+                                                </td>
                                                 <td>
                                                     <span
                                                         className={
@@ -261,7 +307,9 @@ export function IncidentsPage() {
                                                                 : "incidents-duration-resolved"
                                                         }
                                                     >
-                                                        {formatIncidentDuration(incident)}
+                                                        {formatIncidentDuration(
+                                                            incident,
+                                                        )}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -288,16 +336,22 @@ export function IncidentsPage() {
 
                         {/* ── Pagination ──────────────────────────────────── */}
                         {totalPages > 1 && (
-                            <nav className="monitors-pagination" aria-label="Incidents pagination">
+                            <nav
+                                className="monitors-pagination"
+                                aria-label="Incidents pagination"
+                            >
                                 <span className="monitors-pagination-info">
-                                    Page {page} of {totalPages} ({total} incidents)
+                                    Page {page} of {totalPages} ({total}{" "}
+                                    incidents)
                                 </span>
                                 <div className="monitors-pagination-actions">
                                     <button
                                         type="button"
                                         className="monitors-button monitors-button--secondary"
                                         disabled={page <= 1}
-                                        onClick={() => handlePageChange(page - 1)}
+                                        onClick={() =>
+                                            handlePageChange(page - 1)
+                                        }
                                         aria-label="Previous page"
                                     >
                                         Previous
@@ -306,7 +360,9 @@ export function IncidentsPage() {
                                         type="button"
                                         className="monitors-button monitors-button--secondary"
                                         disabled={page >= totalPages}
-                                        onClick={() => handlePageChange(page + 1)}
+                                        onClick={() =>
+                                            handlePageChange(page + 1)
+                                        }
                                         aria-label="Next page"
                                     >
                                         Next

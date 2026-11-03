@@ -42,7 +42,8 @@ function parseErrorResponse(status: number, data: unknown): ApiError {
         if (record.error && typeof record.error === "object") {
             const errObj = record.error as Record<string, unknown>;
             if (typeof errObj.code === "string") code = errObj.code;
-            if (typeof errObj.message === "string") message = cleanMsg(errObj.message);
+            if (typeof errObj.message === "string")
+                message = cleanMsg(errObj.message);
         } else if (record.detail !== undefined) {
             if (typeof record.detail === "string") {
                 message = cleanMsg(record.detail);
@@ -167,9 +168,12 @@ export async function listIncidents(
         params.set("monitor_id", options.monitorId);
     }
 
-    const res = await request<IncidentListResponse>(`/incidents?${params.toString()}`, {
-        method: "GET",
-    });
+    const res = await request<IncidentListResponse>(
+        `/incidents?${params.toString()}`,
+        {
+            method: "GET",
+        },
+    );
 
     // Ensure open incidents are always listed first unless filtered specifically to resolved
     if (!options.status || options.status === "all") {

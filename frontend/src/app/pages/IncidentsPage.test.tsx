@@ -63,8 +63,16 @@ describe("IncidentsPage", () => {
                 if (url.includes("/api/v1/monitors")) {
                     return Promise.resolve(
                         new Response(
-                            JSON.stringify({ items: [], page: 1, page_size: 100, total: 0 }),
-                            { status: 200, headers: { "Content-Type": "application/json" } },
+                            JSON.stringify({
+                                items: [],
+                                page: 1,
+                                page_size: 100,
+                                total: 0,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
                         ),
                     );
                 }
@@ -144,8 +152,16 @@ describe("IncidentsPage", () => {
                 if (url.includes("/api/v1/monitors")) {
                     return Promise.resolve(
                         new Response(
-                            JSON.stringify({ items: [], page: 1, page_size: 100, total: 0 }),
-                            { status: 200, headers: { "Content-Type": "application/json" } },
+                            JSON.stringify({
+                                items: [],
+                                page: 1,
+                                page_size: 100,
+                                total: 0,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
                         ),
                     );
                 }
@@ -157,7 +173,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 2,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }),
@@ -193,8 +212,16 @@ describe("IncidentsPage", () => {
                 if (url.includes("/api/v1/monitors")) {
                     return Promise.resolve(
                         new Response(
-                            JSON.stringify({ items: mockMonitors, page: 1, page_size: 100, total: 1 }),
-                            { status: 200, headers: { "Content-Type": "application/json" } },
+                            JSON.stringify({
+                                items: mockMonitors,
+                                page: 1,
+                                page_size: 100,
+                                total: 1,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
                         ),
                     );
                 }
@@ -217,7 +244,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 1,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }),
@@ -269,7 +299,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 35,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }),
@@ -304,7 +337,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 0,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 ),
             ),
@@ -312,7 +348,9 @@ describe("IncidentsPage", () => {
 
         renderApp();
 
-        expect(await screen.findByText("No incidents found")).toBeInTheDocument();
+        expect(
+            await screen.findByText("No incidents found"),
+        ).toBeInTheDocument();
     });
 
     it("displays error state and allows retry", async () => {
@@ -343,7 +381,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 1,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }),
@@ -352,12 +393,16 @@ describe("IncidentsPage", () => {
         renderApp();
 
         expect(await screen.findByRole("alert")).toBeInTheDocument();
-        expect(screen.getByText("Could not load incidents")).toBeInTheDocument();
+        expect(
+            screen.getByText("Could not load incidents"),
+        ).toBeInTheDocument();
 
         // Click Try again
         fireEvent.click(screen.getByText("Try again"));
 
-        expect(await screen.findByText("Recovered Service")).toBeInTheDocument();
+        expect(
+            await screen.findByText("Recovered Service"),
+        ).toBeInTheDocument();
     });
 
     it("renders text from the API safely as plain text", async () => {
@@ -385,7 +430,10 @@ describe("IncidentsPage", () => {
                             page_size: 20,
                             total: 1,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 ),
             ),
