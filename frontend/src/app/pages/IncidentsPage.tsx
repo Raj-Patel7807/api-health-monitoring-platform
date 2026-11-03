@@ -52,8 +52,7 @@ export function IncidentsPage() {
         // Refresh every 20 seconds while any incident in the list is open
         refetchInterval: (query) => {
             const listData = query.state.data as
-                | IncidentListResponse
-                | undefined;
+                IncidentListResponse | undefined;
             const hasOpenIncident = listData?.items?.some(
                 (i) => i.status === "open",
             );

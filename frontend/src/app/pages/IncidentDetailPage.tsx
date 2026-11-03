@@ -60,8 +60,7 @@ export function IncidentDetailPage() {
         // Poll deliveries every 20 seconds while incident is open OR any delivery is pending
         refetchInterval: (query) => {
             const delivData = query.state.data as
-                | AlertDeliveryListResponse
-                | undefined;
+                AlertDeliveryListResponse | undefined;
             const deliveries = delivData?.items ?? [];
             const hasPending = deliveries.some((d) => d.status === "pending");
             return isIncidentOpen || hasPending ? 20_000 : false;
