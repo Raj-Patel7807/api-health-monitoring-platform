@@ -5,7 +5,6 @@ import logging
 import uuid
 from typing import Any
 
-from celery import Task  # type: ignore[import-untyped]
 from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
 from redis.exceptions import ConnectionError as RedisConnectionError  # type: ignore[import-untyped]
 from sqlalchemy import text
@@ -18,6 +17,7 @@ from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.services.email_sender import send_email
 from app.services.webhook_sender import send_webhook
 from app.workers.celery_app import celery_app
+from celery import Task  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

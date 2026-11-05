@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.results.models import HealthCheckResult
 
-
 MAX_RANGE_DAYS = 31
 MAX_PAGE_SIZE = 100
 
