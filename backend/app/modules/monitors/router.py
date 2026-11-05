@@ -24,7 +24,10 @@ from app.modules.monitors.schemas import (
     MonitorUpdateRequest,
 )
 from app.modules.results import service as results_service
-from app.modules.results.schemas import HealthCheckResultsResponse
+from app.modules.results.schemas import (
+    HealthCheckResultResponse,
+    HealthCheckResultsResponse,
+)
 
 router = APIRouter(prefix="/api/v1/monitors", tags=["monitors"])
 
@@ -136,7 +139,7 @@ async def get_monitor_results(
     )
 
     return HealthCheckResultsResponse(
-        items=items,
+        items=[HealthCheckResultResponse.model_validate(item) for item in items],
         page=page,
         page_size=page_size,
         total=total,

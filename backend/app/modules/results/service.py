@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.modules.results.models import HealthCheckResult
 
@@ -64,12 +65,13 @@ async def list_health_check_results(
             detail="page_size must be between 1 and 100.",
         )
 
-        filters = [
-            HealthCheckResult.monitor_id == monitor_id,
-            HealthCheckResult.checked_at >= effective_start,
-            HealthCheckResult.checked_at <= effective_end,
-            HealthCheckResult.status.in_(["healthy", "failing"]),
-        ]
+    filters: list[ColumnElement[bool]] = [
+        HealthCheckResult.monitor_id == monitor_id,
+        HealthCheckResult.checked_at >= effective_start,
+        HealthCheckResult.checked_at <= effective_end,
+        HealthCheckResult.status.in_(["healthy", "failing"]),
+    ]
+
     if result_status is not None:
         if result_status not in {"healthy", "failing"}:
             raise HTTPException(

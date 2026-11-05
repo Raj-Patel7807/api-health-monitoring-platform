@@ -25,7 +25,6 @@ def build_result_row(
     result: CheckResult,
     monitor_id: UUID,
 ) -> HealthCheckResult:
-
     if result.status not in {"healthy", "failing"}:
         raise ValueError(f"Invalid health check status: {result.status}")
 
@@ -34,7 +33,7 @@ def build_result_row(
     if result.status == "healthy":
         excerpt = ""
     else:
-        excerpt = _strip_nul((result.body_excerpt or "")[:BODY_EXCERPT_MAX_CHARS])
+        excerpt = _strip_nul((result.body_excerpt or "")[:BODY_EXCERPT_MAX_CHARS]) or ""
 
     return HealthCheckResult(
         monitor_id=monitor_id,
@@ -55,9 +54,6 @@ def record_check_result(
     result: CheckResult,
     monitor_id: UUID,
 ) -> HealthCheckResult:
-
     row = build_result_row(result, monitor_id)
-
     session.add(row)
-
     return row
