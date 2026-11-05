@@ -1,3 +1,4 @@
+
 """Health check execution and failure classification (US-06).
 
 Implements AC-06.1 through AC-06.6:
@@ -16,6 +17,7 @@ import socket
 import ssl
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -27,6 +29,7 @@ from app.db.session import get_db_session
 from app.modules.incidents.service import process_monitor_failure
 from app.modules.monitors.backoff import DEFAULT_USER_AGENT, update_monitor_backoff
 from app.modules.monitors.models import Monitor
+from app.modules.results.recorder import record_check_result
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +42,7 @@ logger = logging.getLogger(__name__)
 class CheckResult:
     """Structured outcome of a single health check execution.
 
-    Matches the columns of the health_check_results table (schema_mvp.sql).
-    Storing and persisting this result is the responsibility of US-08 (Sprint 3).
+    Matches the columns of the health_check_results table.
     """
 
     monitor_id: str
@@ -51,7 +53,10 @@ class CheckResult:
     connection_error: bool = False
     ssl_error: bool = False
     error_message: str | None = None
-    # Counter snapshots after the check (useful for caller / US-09 incident logic)
+    body_excerpt: str | None = field(default=None, repr=False)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    # Counter snapshots after the check
     consecutive_failures: int = field(default=0, repr=False)
     consecutive_successes: int = field(default=0, repr=False)
 
@@ -106,17 +111,6 @@ def execute_http_check(
     Uses a synchronous httpx.Client because Celery tasks are synchronous.
     Sends a custom User-Agent header as required by US-16 / DR2.
     Measures elapsed time with a monotonic clock for accuracy.
-
-    Args:
-        url: The endpoint URL to probe.
-        method: HTTP method (GET, HEAD, POST, …).
-        expected_status_code: The status code that means the endpoint is healthy.
-        timeout_seconds: Maximum seconds to wait for a complete response.
-        user_agent: Value for the User-Agent request header.
-        monitor_id: String UUID of the monitor (used for logging and the result).
-
-    Returns:
-        A CheckResult describing the exact outcome.
     """
     result = CheckResult(monitor_id=monitor_id, status="healthy")
     headers = {"User-Agent": user_agent}
@@ -129,6 +123,7 @@ def execute_http_check(
         result.error_message = "Blocked unsafe or unresolvable monitoring target"
         logger.warning("Monitor %s: blocked unsafe or unresolvable target", monitor_id)
         return result
+
     try:
         with httpx.Client(timeout=timeout_seconds, verify=True, trust_env=False) as client:
             response = client.request(method, url, headers=headers)
@@ -136,6 +131,7 @@ def execute_http_check(
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result.response_time_ms = elapsed_ms
         result.http_status_code = response.status_code
+        result.body_excerpt = response.text[:500]
 
         # AC-06.2 — wrong status code
         if response.status_code != expected_status_code:
@@ -159,8 +155,7 @@ def execute_http_check(
         result.error_message = f"Request timed out after {timeout_seconds}s: {exc}"
         logger.warning("Monitor %s: timeout after %ds", monitor_id, timeout_seconds)
 
-    # AC-06.5 — SSL / TLS failure (must be checked before ConnectError because
-    # httpx wraps SSL errors inside ConnectError on some platforms)
+    # AC-06.5 — SSL / TLS failure
     except httpx.ConnectError as exc:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result.response_time_ms = elapsed_ms
@@ -172,12 +167,12 @@ def execute_http_check(
             result.error_message = f"SSL/TLS error: {exc}"
             logger.warning("Monitor %s: SSL/TLS failure — %s", monitor_id, exc)
         else:
-            # AC-06.4 — connection failure (DNS, refused, unreachable …)
+            # AC-06.4 — connection failure
             result.connection_error = True
             result.error_message = f"Connection error: {exc}"
             logger.warning("Monitor %s: connection error — %s", monitor_id, exc)
 
-    # AC-06.4 — remaining request errors, including proxy/protocol errors.
+    # AC-06.4 — remaining request errors
     except httpx.RequestError as exc:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result.response_time_ms = elapsed_ms
@@ -190,16 +185,12 @@ def execute_http_check(
 
 
 # ---------------------------------------------------------------------------
-# Counter update (pure, no I/O — easy to unit-test)
+# Counter update
 # ---------------------------------------------------------------------------
 
 
 def update_monitor_counters(monitor: Monitor, result: CheckResult) -> None:
-    """Increment the appropriate counter and reset the opposite one.
-
-    AC-06.6: a single failure increments consecutive_failures only.
-    Incident creation from thresholds belongs to US-09, not here.
-    """
+    """Increment the appropriate counter and reset the opposite one."""
     if result.status == "healthy":
         monitor.consecutive_successes += 1
         monitor.consecutive_failures = 0
@@ -217,16 +208,7 @@ def check_monitor_by_id(
     monitor_id: str,
     db_session: Session | None = None,
 ) -> CheckResult | None:
-    """Load a monitor, run its health check, update counters, and return the result.
-
-    Args:
-        monitor_id: String UUID of the monitor to check.
-        db_session: Optional injected session (used in unit tests to avoid real DB).
-                    When None, a real session is obtained via get_db_session().
-
-    Returns:
-        A CheckResult, or None if the monitor is not found / should be skipped.
-    """
+    """Load a monitor, run its health check, update counters, and return the result."""
 
     def _run(session: Session) -> CheckResult | None:
         try:
@@ -254,6 +236,7 @@ def check_monitor_by_id(
             if monitor.user_agent and monitor.user_agent.strip()
             else DEFAULT_USER_AGENT
         )
+
         result = execute_http_check(
             url=monitor.url,
             method=monitor.method,
@@ -263,8 +246,7 @@ def check_monitor_by_id(
             monitor_id=str(monitor.id),
         )
 
-        # Atomic SQL arithmetic prevents overlapping Celery tasks from losing
-        # increments when both read the same old counter value.
+        # Atomic SQL arithmetic prevents overlapping Celery tasks from losing increments.
         counters = (
             {
                 "consecutive_failures": 0,
@@ -276,6 +258,7 @@ def check_monitor_by_id(
                 "consecutive_successes": 0,
             }
         )
+
         row = session.execute(
             update(Monitor)
             .where(
@@ -287,25 +270,29 @@ def check_monitor_by_id(
             .returning(Monitor.consecutive_failures, Monitor.consecutive_successes)
         ).one_or_none()
 
-        if row is None:  # Disabled or deleted during the HTTP request.
+        if row is None:
             session.commit()
             return None
 
         result.consecutive_failures, result.consecutive_successes = row
 
-        # Synchronize in-memory monitor state with the atomic database counters
-        # before calculating backoff to prevent using stale counts or overwriting.
+        # Synchronize in-memory monitor state with atomic database counters.
         monitor.consecutive_failures = result.consecutive_failures
         monitor.consecutive_successes = result.consecutive_successes
 
-        # Update backoff state (current_interval_seconds and backoff_until)
+        # Update backoff state.
         update_monitor_backoff(monitor, is_healthy=(result.status == "healthy"))
 
-        # Threshold-based incident evaluation (US-09)
+        # Threshold-based incident evaluation (US-09).
         if result.status != "healthy":
             process_monitor_failure(session, monitor, result.consecutive_failures)
 
+        # Save the completed health check.
+        result.checked_at = datetime.now(UTC)
+        record_check_result(session, result, monitor_uuid)
+
         session.commit()
+
         logger.info(
             "Monitor %s check complete: status=%s failures=%d successes=%d",
             monitor_id,
@@ -313,10 +300,11 @@ def check_monitor_by_id(
             result.consecutive_failures,
             result.consecutive_successes,
         )
+
         return result
 
     if db_session is not None:
-        # Injected session — caller owns transaction lifecycle (used in tests)
+        # Injected session — caller owns transaction lifecycle (used in tests).
         return _run(db_session)
 
     with get_db_session() as session:
