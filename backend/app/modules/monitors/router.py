@@ -1,4 +1,3 @@
-
 """FastAPI router for Monitor CRUD and health-check results."""
 
 from datetime import datetime
@@ -65,9 +64,7 @@ async def list_monitors(
     context: Annotated[TeamContext, Depends(require_monitor_read)],
     db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
-    page_size: Annotated[
-        int, Query(ge=1, le=100, description="Items per page")
-    ] = 20,
+    page_size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 20,
 ) -> MonitorListResponse:
     """List active monitors belonging to the caller's team."""
     items, total = await service.list_monitors(
@@ -110,9 +107,7 @@ async def get_monitor_results(
     db: Annotated[AsyncSession, Depends(get_db)],
     start_time: datetime | None = None,
     end_time: datetime | None = None,
-    result_status: Annotated[
-        str | None, Query(alias="status")
-    ] = None,
+    result_status: Annotated[str | None, Query(alias="status")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> HealthCheckResultsResponse:
@@ -130,16 +125,14 @@ async def get_monitor_results(
             detail="Monitor not found.",
         )
 
-    items, total, effective_start, effective_end = (
-        await results_service.list_health_check_results(
-            db=db,
-            monitor_id=monitor_id,
-            page=page,
-            page_size=page_size,
-            start_time=start_time,
-            end_time=end_time,
-            result_status=result_status,
-        )
+    items, total, effective_start, effective_end = await results_service.list_health_check_results(
+        db=db,
+        monitor_id=monitor_id,
+        page=page,
+        page_size=page_size,
+        start_time=start_time,
+        end_time=end_time,
+        result_status=result_status,
     )
 
     return HealthCheckResultsResponse(

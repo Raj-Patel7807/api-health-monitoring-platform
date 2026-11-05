@@ -29,29 +29,19 @@ def build_result_row(
     if result.status not in {"healthy", "failing"}:
         raise ValueError(f"Invalid health check status: {result.status}")
 
-    transport_failure = (
-        result.timeout
-        or result.connection_error
-        or result.ssl_error
-    )
+    transport_failure = result.timeout or result.connection_error or result.ssl_error
 
     if result.status == "healthy":
         excerpt = ""
     else:
-        excerpt = _strip_nul(
-            (result.body_excerpt or "")[:BODY_EXCERPT_MAX_CHARS]
-        )
+        excerpt = _strip_nul((result.body_excerpt or "")[:BODY_EXCERPT_MAX_CHARS])
 
     return HealthCheckResult(
         monitor_id=monitor_id,
         checked_at=result.checked_at,
         status=result.status,
-        http_status_code=(
-            None if transport_failure else result.http_status_code
-        ),
-        response_time_ms=(
-            None if transport_failure else result.response_time_ms
-        ),
+        http_status_code=(None if transport_failure else result.http_status_code),
+        response_time_ms=(None if transport_failure else result.response_time_ms),
         timeout=result.timeout,
         connection_error=result.connection_error,
         ssl_error=result.ssl_error,

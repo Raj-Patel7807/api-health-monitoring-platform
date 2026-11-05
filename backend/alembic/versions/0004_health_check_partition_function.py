@@ -1,4 +1,3 @@
-
 """Add monthly health check partition creation function.
 
 Revision ID: 0004
@@ -49,11 +48,7 @@ def upgrade() -> None:
     op.execute(sa.text(CREATE_PARTITION_FUNCTION))
 
     # Ensure the current month's partition exists.
-    op.execute(
-        sa.text(
-            "SELECT create_health_check_partition(CURRENT_DATE)"
-        )
-    )
+    op.execute(sa.text("SELECT create_health_check_partition(CURRENT_DATE)"))
 
     # Create next month's partition in advance.
     op.execute(
@@ -70,8 +65,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Keep existing partitions and their data.
     # Only remove the function created by this migration.
-    op.execute(
-        sa.text(
-            "DROP FUNCTION IF EXISTS create_health_check_partition(DATE)"
-        )
-    )
+    op.execute(sa.text("DROP FUNCTION IF EXISTS create_health_check_partition(DATE)"))

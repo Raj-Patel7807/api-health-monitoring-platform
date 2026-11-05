@@ -1,4 +1,3 @@
-
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -67,11 +66,11 @@ async def list_health_check_results(
         )
 
         filters = [
-        HealthCheckResult.monitor_id == monitor_id,
-        HealthCheckResult.checked_at >= effective_start,
-        HealthCheckResult.checked_at <= effective_end,
-        HealthCheckResult.status.in_(["healthy", "failing"]),
-    ]
+            HealthCheckResult.monitor_id == monitor_id,
+            HealthCheckResult.checked_at >= effective_start,
+            HealthCheckResult.checked_at <= effective_end,
+            HealthCheckResult.status.in_(["healthy", "failing"]),
+        ]
     if result_status is not None:
         if result_status not in {"healthy", "failing"}:
             raise HTTPException(
@@ -80,11 +79,7 @@ async def list_health_check_results(
             )
         filters.append(HealthCheckResult.status == result_status)
 
-    count_stmt = (
-        select(func.count())
-        .select_from(HealthCheckResult)
-        .where(*filters)
-    )
+    count_stmt = select(func.count()).select_from(HealthCheckResult).where(*filters)
     count_result = await db.execute(count_stmt)
     total = count_result.scalar_one()
 

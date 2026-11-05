@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -125,14 +124,10 @@ def send_email_task(delivery_id: str) -> str:
     db_engine = create_database_engine()
     SessionLocal = sessionmaker(bind=db_engine)
     db = SessionLocal()
-    delivery = db.query(DeliveryLog).filter(
-        DeliveryLog.id == uuid.UUID(delivery_id)
-    ).first()
+    delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise ValueError(f"Delivery {delivery_id} not found")
-    payload: dict[str, Any] = (
-        dict(delivery.request_payload) if delivery.request_payload else {}
-    )
+    payload: dict[str, Any] = dict(delivery.request_payload) if delivery.request_payload else {}
     to: str = str(payload.get("to", ""))
     subject: str = str(payload.get("subject", ""))
     template_name: str = str(payload.get("template_name", "default.html"))
@@ -160,14 +155,10 @@ def send_webhook_task(delivery_id: str) -> str:
     db_engine = create_database_engine()
     SessionLocal = sessionmaker(bind=db_engine)
     db = SessionLocal()
-    delivery = db.query(DeliveryLog).filter(
-        DeliveryLog.id == uuid.UUID(delivery_id)
-    ).first()
+    delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise ValueError(f"Delivery {delivery_id} not found")
-    payload: dict[str, Any] = (
-        dict(delivery.request_payload) if delivery.request_payload else {}
-    )
+    payload: dict[str, Any] = dict(delivery.request_payload) if delivery.request_payload else {}
     url: str = str(payload.get("url", ""))
     event_type: str = str(payload.get("event_type", "unknown"))
     body: dict[str, Any] = payload.get("payload", {})
@@ -186,9 +177,7 @@ def replay_delivery_task(delivery_id: str) -> str:
     db_engine = create_database_engine()
     SessionLocal = sessionmaker(bind=db_engine)
     db = SessionLocal()
-    delivery = db.query(DeliveryLog).filter(
-        DeliveryLog.id == uuid.UUID(delivery_id)
-    ).first()
+    delivery = db.query(DeliveryLog).filter(DeliveryLog.id == uuid.UUID(delivery_id)).first()
     if not delivery:
         raise ValueError(f"Delivery {delivery_id} not found")
     channel = str(delivery.channel_type)

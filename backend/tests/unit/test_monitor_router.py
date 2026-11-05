@@ -1,4 +1,3 @@
-
 """Unit tests for monitor router endpoints with mock dependencies (US-02)."""
 
 from datetime import UTC, datetime, timedelta
@@ -184,9 +183,7 @@ async def test_list_monitors_endpoint(
             transport=ASGITransport(app=app),
             base_url="http://test",
         ) as ac:
-            resp = await ac.get(
-                "/api/v1/monitors?page=1&page_size=20"
-            )
+            resp = await ac.get("/api/v1/monitors?page=1&page_size=20")
 
             assert resp.status_code == 200
             data = resp.json()
@@ -380,9 +377,7 @@ async def test_get_monitor_results_endpoint_success(
             transport=ASGITransport(app=app),
             base_url="http://test",
         ) as ac:
-            response = await ac.get(
-                f"/api/v1/monitors/{dummy.id}/results"
-            )
+            response = await ac.get(f"/api/v1/monitors/{dummy.id}/results")
 
         assert response.status_code == 200
         data = response.json()
@@ -502,9 +497,7 @@ async def test_get_monitor_results_returns_404_for_unavailable_monitor(
             transport=ASGITransport(app=app),
             base_url="http://test",
         ) as ac:
-            response = await ac.get(
-                f"/api/v1/monitors/{uuid4()}/results"
-            )
+            response = await ac.get(f"/api/v1/monitors/{uuid4()}/results")
 
         assert response.status_code == 404
 

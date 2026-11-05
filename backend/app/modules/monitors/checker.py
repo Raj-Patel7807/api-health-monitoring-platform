@@ -1,4 +1,3 @@
-
 """Health check execution and failure classification (US-06).
 
 Implements AC-06.1 through AC-06.6:
