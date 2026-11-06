@@ -39,7 +39,7 @@ def get_database_url() -> str:
         password = os.getenv("POSTGRES_PASSWORD", "postgres")
         host = os.getenv("POSTGRES_HOST", "127.0.0.1")
         port = os.getenv("POSTGRES_PORT", "5432")
-        db = os.getenv("POSTGRES_DB", "api_health")
+        db = os.getenv("POSTGRES_DB", "api_health_db")
         db_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
 
     # Auto-resolve host if localhost/127.0.0.1 is not reachable (WSL2 bridge)
