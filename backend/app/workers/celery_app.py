@@ -58,6 +58,7 @@ celery_app.conf.task_routes = {
     "app.workers.tasks.dispatch_notification": {"queue": "notifications"},
     "app.workers.tasks.analyze_incident": {"queue": "ai"},
     "app.workers.tasks.schedule_due_monitors": {"queue": "maintenance"},
+    "app.workers.tasks.ensure_next_month_partition": {"queue": "maintenance"},
 }
 
 # Worker resilience, crash safety, and acknowledgment
@@ -77,10 +78,14 @@ celery_app.conf.accept_content = ["json"]
 celery_app.conf.timezone = "UTC"
 celery_app.conf.enable_utc = True
 
-# Continuous beat schedule for monitoring loop
+# Celery Beat schedule
 celery_app.conf.beat_schedule = {
     "schedule-due-monitors-every-10s": {
         "task": "app.workers.tasks.schedule_due_monitors",
         "schedule": 10.0,
+    },
+    "ensure-next-month-partition-daily": {
+        "task": "app.workers.tasks.ensure_next_month_partition",
+        "schedule": 86400.0,
     },
 }

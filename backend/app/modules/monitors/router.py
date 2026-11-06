@@ -1,14 +1,6 @@
-"""FastAPI router for Monitor CRUD (US-02).
+"""FastAPI router for Monitor CRUD and health-check results."""
 
-Endpoints:
-----------
-POST   /api/v1/monitors        Create a new monitor under caller's team (admin/operator).
-GET    /api/v1/monitors        List monitors for caller's team with pagination.
-GET    /api/v1/monitors/{id}   Get monitor details by ID (scoped to team).
-PATCH  /api/v1/monitors/{id}   Partially update monitor (admin/operator).
-DELETE /api/v1/monitors/{id}   Soft delete monitor (admin/operator).
-"""
-
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -31,6 +23,11 @@ from app.modules.monitors.schemas import (
     MonitorResponse,
     MonitorUpdateRequest,
 )
+from app.modules.results import service as results_service
+from app.modules.results.schemas import (
+    HealthCheckResultResponse,
+    HealthCheckResultsResponse,
+)
 
 router = APIRouter(prefix="/api/v1/monitors", tags=["monitors"])
 
@@ -48,7 +45,6 @@ async def create_monitor(
     """Register and configure a new API endpoint monitor under the active team."""
     effective_team_id = context.team.id
     if body.team_id is not None and body.team_id != context.team.id:
-        # Cross-team creation requested: verify user is an admin or operator on target team
         stmt = select(TeamMembership).where(
             TeamMembership.team_id == body.team_id,
             TeamMembership.user_id == context.user.id,
@@ -102,6 +98,54 @@ async def get_monitor(
             detail="Monitor not found.",
         )
     return MonitorDetailResponse.model_validate(monitor)
+
+
+@router.get(
+    "/{monitor_id}/results",
+    response_model=HealthCheckResultsResponse,
+)
+async def get_monitor_results(
+    monitor_id: UUID,
+    context: Annotated[TeamContext, Depends(require_monitor_read)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    result_status: Annotated[str | None, Query(alias="status")] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> HealthCheckResultsResponse:
+    """Get paginated health-check results for a monitor owned by the caller's team."""
+
+    monitor = await service.get_monitor(
+        db,
+        context.team.id,
+        monitor_id,
+    )
+
+    if monitor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Monitor not found.",
+        )
+
+    items, total, effective_start, effective_end = await results_service.list_health_check_results(
+        db=db,
+        monitor_id=monitor_id,
+        page=page,
+        page_size=page_size,
+        start_time=start_time,
+        end_time=end_time,
+        result_status=result_status,
+    )
+
+    return HealthCheckResultsResponse(
+        items=[HealthCheckResultResponse.model_validate(item) for item in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        start_time=effective_start,
+        end_time=effective_end,
+    )
 
 
 @router.patch("/{id}", response_model=MonitorDetailResponse)
