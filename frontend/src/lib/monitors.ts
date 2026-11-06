@@ -74,6 +74,52 @@ export type MonitorListResponse = {
     total: number;
 };
 
+/* ── Check Results ───────────────────────────────────────────────────────── */
+
+export type CheckResultStatus = "healthy" | "failing";
+
+/** One row from GET /monitors/{id}/results — mirrors API.md and backend schema. */
+export type CheckResult = {
+    id: string;
+    monitor_id?: string;
+    checked_at: string; // ISO 8601
+    status: CheckResultStatus;
+    http_status_code: number | null;
+    response_time_ms: number | null;
+    timeout: boolean;
+    connection_error: boolean;
+    ssl_error: boolean;
+    error_message: string | null;
+    response_body_excerpt: string | null;
+    created_at?: string;
+};
+
+export type CheckResultListResponse = {
+    items: CheckResult[];
+    page: number;
+    page_size: number;
+    total: number;
+    start_time?: string;
+    end_time?: string;
+};
+
+/** The four preset ranges available in the time-range selector. */
+export type TimeRange = "1h" | "24h" | "7d" | "custom";
+
+/** Query parameters accepted by getMonitorResults(). */
+export type CheckResultsParams = {
+    page?: number;
+    page_size?: number;
+    from?: string; // ISO 8601
+    to?: string; // ISO 8601
+    start_time?: string; // ISO 8601 with timezone (backend parameter)
+    end_time?: string; // ISO 8601 with timezone (backend parameter)
+    status?: CheckResultStatus | "";
+};
+
+/** Maximum allowed custom range in days (API returns 422 if exceeded). */
+export const MAX_CUSTOM_RANGE_DAYS = 31;
+
 export type MonitorFormValues = {
     name: string;
     url: string;

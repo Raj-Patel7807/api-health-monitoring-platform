@@ -9,6 +9,14 @@
     max-height: 100%;
     position: fixed;
     inset: 0;
+    z-index: 1000;
+}
+
+.confirm-dialog:not([open]) {
+    display: none !important;
+}
+
+.confirm-dialog[open] {
     display: flex;
     align-items: center;
     justify-content: center;

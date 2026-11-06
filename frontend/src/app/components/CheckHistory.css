@@ -1,0 +1,328 @@
+/* ── Section wrapper ──────────────────────────────────────────────────────── */
+.ch-section {
+    margin-top: var(--space-8);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+}
+
+/* ── Header & controls row ───────────────────────────────────────────────── */
+.ch-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.ch-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+/* ── Time-range button group ──────────────────────────────────────────────── */
+.ch-control-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.ch-range-btn {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--clr-border);
+    color: var(--clr-text-secondary);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: var(--space-2) var(--space-3);
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+    white-space: nowrap;
+}
+
+.ch-range-btn:last-child {
+    border-right: none;
+}
+
+.ch-range-btn:hover {
+    background: var(--clr-accent-soft);
+    color: var(--clr-accent);
+}
+
+.ch-range-btn--active {
+    background: var(--clr-accent-soft);
+    color: var(--clr-accent);
+    font-weight: 600;
+}
+
+/* ── Status select ────────────────────────────────────────────────────────── */
+.ch-select-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ch-select-text {
+    font-size: 0.8125rem;
+    color: var(--clr-text-secondary);
+    white-space: nowrap;
+}
+
+.ch-select {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-size: 0.8125rem;
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+
+.ch-select:focus {
+    border-color: var(--clr-accent);
+    outline: none;
+}
+
+/* ── Custom date range inputs ─────────────────────────────────────────────── */
+.ch-custom-range {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.ch-date-label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.ch-date-input {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-size: 0.8125rem;
+    padding: var(--space-2) var(--space-3);
+    transition: border-color var(--transition-fast);
+}
+
+.ch-date-input:focus {
+    border-color: var(--clr-accent);
+    outline: none;
+}
+
+/* ── Range error message ─────────────────────────────────────────────────── */
+.ch-range-error {
+    color: var(--clr-red);
+    font-size: 0.8125rem;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--clr-red-soft);
+    border: 1px solid rgba(252, 129, 129, 0.3);
+    border-radius: var(--radius-md);
+}
+
+/* ── State boxes ─────────────────────────────────────────────────────────── */
+.ch-error-state,
+.ch-empty-state {
+    gap: var(--space-3);
+}
+
+.ch-state-msg {
+    color: var(--clr-text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+    text-align: center;
+}
+
+/* ── Table wrapper (horizontal scroll on small screens) ─────────────────── */
+.ch-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--clr-border);
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.ch-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.8125rem;
+}
+
+.ch-head-row {
+    background: var(--clr-bg-elevated);
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.ch-th {
+    color: var(--clr-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* ── Data rows ───────────────────────────────────────────────────────────── */
+.ch-row {
+    border-bottom: 1px solid var(--clr-border);
+    transition: background var(--transition-fast);
+}
+
+.ch-row:last-of-type {
+    border-bottom: none;
+}
+
+.ch-row:hover {
+    background: var(--clr-bg-elevated);
+}
+
+.ch-cell {
+    color: var(--clr-text-primary);
+    padding: var(--space-3) var(--space-4);
+    vertical-align: middle;
+}
+
+.ch-cell--mono {
+    font-family: var(--font-mono);
+}
+
+.ch-cell--time {
+    white-space: nowrap;
+}
+
+.ch-cell--error {
+    max-width: 18rem;
+}
+
+.ch-time {
+    color: var(--clr-text-secondary);
+    font-size: 0.8125rem;
+    cursor: help;
+}
+
+.ch-error-text {
+    color: var(--clr-text-secondary);
+    word-break: break-word;
+}
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+.ch-badge {
+    border-radius: 99px;
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.2em 0.6em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ch-badge--ok {
+    background: var(--clr-green-soft);
+    color: var(--clr-green);
+}
+
+.ch-badge--fail {
+    background: var(--clr-red-soft);
+    color: var(--clr-red);
+}
+
+/* ── Expand button inside error cell ─────────────────────────────────────── */
+.ch-expand-btn {
+    background: transparent;
+    border: none;
+    color: var(--clr-text-secondary);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    padding: 0;
+    text-align: left;
+    word-break: break-word;
+}
+
+.ch-expand-btn:hover {
+    color: var(--clr-accent);
+}
+
+.ch-expand-icon {
+    color: var(--clr-text-muted);
+    font-size: 0.7rem;
+}
+
+/* ── Excerpt row ─────────────────────────────────────────────────────────── */
+.ch-excerpt-row {
+    background: var(--clr-bg);
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.ch-excerpt-cell {
+    padding: 0 var(--space-4) var(--space-4);
+}
+
+.ch-excerpt-toggle {
+    background: transparent;
+    border: none;
+    color: var(--clr-accent);
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-bottom: var(--space-2);
+    padding: var(--space-2) 0;
+    display: block;
+}
+
+.ch-excerpt-toggle:hover {
+    text-decoration: underline;
+}
+
+.ch-excerpt-body {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-height: 12rem;
+    overflow-y: auto;
+    padding: var(--space-3) var(--space-4);
+    /* Prevent HTML injection — render as plain text */
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────────── */
+.ch-pagination {
+    align-items: center;
+    border-top: 1px solid var(--clr-border);
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.ch-page-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+}
+
+.ch-page-info {
+    color: var(--clr-text-secondary);
+    font-size: 0.8125rem;
+    min-width: 8rem;
+    text-align: center;
+}
+
+.ch-page-total {
+    color: var(--clr-text-muted);
+}
