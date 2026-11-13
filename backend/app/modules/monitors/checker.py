@@ -25,7 +25,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
-from app.modules.incidents.service import process_monitor_failure
+from app.modules.incidents.service import process_incident_state_transition
 from app.modules.monitors.backoff import DEFAULT_USER_AGENT, update_monitor_backoff
 from app.modules.monitors.models import Monitor
 from app.modules.results.recorder import record_check_result
@@ -282,11 +282,10 @@ def check_monitor_by_id(
         # Update backoff state.
         update_monitor_backoff(monitor, is_healthy=(result.status == "healthy"))
 
-        # Threshold-based incident evaluation (US-09).
-        if result.status != "healthy":
-            process_monitor_failure(session, monitor, result.consecutive_failures)
+        # Incident state machine transitions (US-09 & US-10).
+        process_incident_state_transition(session, monitor, is_healthy=(result.status == "healthy"))
 
-        # Save the completed health check.
+        # Save the completed health check (US-08).
         result.checked_at = datetime.now(UTC)
         record_check_result(session, result, monitor_uuid)
 
