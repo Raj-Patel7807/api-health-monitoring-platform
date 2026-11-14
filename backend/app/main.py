@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     """Validate required application secrets and configuration at startup."""
     validate_encryption_key()
+    # Register B5 alert dispatch hooks
+    from app.modules.alerts.hooks import register_b5_hooks
+
+    register_b5_hooks()
     yield
 
 
