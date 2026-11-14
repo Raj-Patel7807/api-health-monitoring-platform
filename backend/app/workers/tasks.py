@@ -3,11 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
 from redis.exceptions import ConnectionError as RedisConnectionError  # type: ignore[import-untyped]
-from sqlalchemy import text
+from sqlalchemy import desc, select, text
 from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -168,6 +169,105 @@ def send_webhook_task(delivery_id: str) -> str:
     delivery.update_status(DeliveryStatus.success)
     db.commit()
     db.close()
+    return delivery_id
+
+
+@celery_app.task(  # type: ignore[misc]
+    bind=True,
+    name="app.workers.tasks.send_alert_task",
+    acks_late=True,
+    reject_on_worker_lost=True,
+    max_retries=0,
+)
+def send_alert_task(self: Task, delivery_id: str) -> str:
+    """Send one alert delivery. Idempotent: skips if not pending.
+
+    Security: the secret is decrypted inside the sender, never logged.
+    A failed send sets status=failed, attempt_count=1, sanitized error_message.
+    Other channels are not affected by this channel's failure.
+    """
+    from app.modules.alerts.models import AlertDelivery
+    from app.modules.alerts.models import DeliveryStatus as AlertDeliveryStatus
+    from app.modules.alerts.senders import AlertMessage, AlertSendError, get_sender
+    from app.modules.channels.models import NotificationChannel
+    from app.modules.incidents.models import Incident
+    from app.modules.monitors.models import Monitor
+    from app.modules.results.models import HealthCheckResult
+
+    with get_db_session() as session:
+        delivery = session.get(AlertDelivery, uuid.UUID(delivery_id))
+        if delivery is None:
+            logger.warning("send_alert_task: delivery %s not found", delivery_id)
+            return delivery_id
+
+        # Idempotency: only send if still pending
+        if delivery.status != AlertDeliveryStatus.PENDING:
+            logger.info(
+                "send_alert_task: delivery %s already %s, skipping",
+                delivery_id,
+                delivery.status,
+            )
+            return delivery_id
+
+        incident = session.get(Incident, delivery.incident_id)
+        channel = session.get(NotificationChannel, delivery.notification_channel_id)
+
+        if incident is None or channel is None:
+            logger.error(
+                "send_alert_task: incident or channel not found for delivery %s", delivery_id
+            )
+            delivery.status = AlertDeliveryStatus.FAILED
+            delivery.attempt_count = 1
+            delivery.error_message = "Incident or channel not found."
+            session.commit()
+            return delivery_id
+
+        monitor = session.get(Monitor, incident.monitor_id)
+
+        # Get the last result for failure_reason (opened alerts only)
+        last_result = session.execute(
+            select(HealthCheckResult)
+            .where(HealthCheckResult.monitor_id == incident.monitor_id)
+            .order_by(desc(HealthCheckResult.checked_at))
+            .limit(1)
+        ).scalar_one_or_none()
+        failure_reason = last_result.error_message if last_result else None
+
+        checked_at = (
+            incident.opened_at
+            if delivery.event_type == "opened"
+            else (incident.resolved_at or incident.opened_at)
+        )
+        message = AlertMessage(
+            monitor_name=monitor.name if monitor else "Unknown",
+            monitor_url=monitor.url if monitor else "",
+            event_type=str(delivery.event_type),
+            checked_at=checked_at,
+            failure_reason=failure_reason,
+        )
+
+        try:
+            sender = get_sender(str(channel.type))
+            sender.send(channel, message)
+            delivery.status = AlertDeliveryStatus.SENT
+            delivery.attempt_count = 1
+            delivery.sent_at = datetime.now(UTC)
+        except AlertSendError as exc:
+            safe_msg = str(exc)[:500]
+            delivery.status = AlertDeliveryStatus.FAILED
+            delivery.attempt_count = 1
+            delivery.error_message = safe_msg
+            logger.error(
+                "send_alert_task: delivery %s failed (AlertSendError): %s", delivery_id, safe_msg
+            )
+        except Exception as exc:
+            safe_msg = f"{type(exc).__name__}: send failed"
+            delivery.status = AlertDeliveryStatus.FAILED
+            delivery.attempt_count = 1
+            delivery.error_message = safe_msg
+            logger.error("send_alert_task: delivery %s failed: %s", delivery_id, safe_msg)
+
+        session.commit()
     return delivery_id
 
 
