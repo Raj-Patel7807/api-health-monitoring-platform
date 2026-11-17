@@ -38,7 +38,8 @@ function parseErrorMessage(status: number, data: unknown): string {
         }
         if (typeof rec.detail === "string") return rec.detail;
     }
-    if (status >= 500) return "Something went wrong on our side. Please try again.";
+    if (status >= 500)
+        return "Something went wrong on our side. Please try again.";
     if (status === 401) return "Session expired. Please log in again.";
     if (status === 403) return "You don't have permission to view this.";
     return "Request failed.";
@@ -141,9 +142,12 @@ export async function getDashboardData(): Promise<DashboardData> {
         request<MonitorListResponse>("/monitors?page=1&page_size=500", {
             method: "GET",
         }),
-        request<IncidentListResponse>("/incidents?status=open&page=1&page_size=500", {
-            method: "GET",
-        }),
+        request<IncidentListResponse>(
+            "/incidents?status=open&page=1&page_size=500",
+            {
+                method: "GET",
+            },
+        ),
     ]);
 
     const monitors = monitorsRes.items ?? [];

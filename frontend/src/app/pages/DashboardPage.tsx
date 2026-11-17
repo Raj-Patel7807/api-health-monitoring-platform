@@ -17,14 +17,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { getDashboardData, ApiError } from "../../lib/dashboardApi";
-import type { DashboardMonitorRow, DashboardSummary } from "../../lib/dashboardApi";
+import type {
+    DashboardMonitorRow,
+    DashboardSummary,
+} from "../../lib/dashboardApi";
 import type { MonitorHealthStatus } from "../../lib/dashboard";
 import { AppNav } from "../components/AppNav";
 import "./dashboard.css";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatLocalTime(iso: string | null): { local: string; utc: string } | null {
+function formatLocalTime(
+    iso: string | null,
+): { local: string; utc: string } | null {
     if (!iso) return null;
     try {
         const date = new Date(iso);
@@ -53,7 +58,13 @@ type SummaryCardProps = {
     animationDelay?: number;
 };
 
-function SummaryCard({ label, value, icon, variant = "default", animationDelay = 0 }: SummaryCardProps) {
+function SummaryCard({
+    label,
+    value,
+    icon,
+    variant = "default",
+    animationDelay = 0,
+}: SummaryCardProps) {
     return (
         <div
             className={`dashboard-summary-card${variant !== "default" ? ` dashboard-summary-card--${variant}` : ""}`}
@@ -105,7 +116,10 @@ function LastCheckedCell({ iso }: LastCheckedCellProps) {
 
     if (!formatted) {
         return (
-            <span className="dashboard-cell-time-dash" aria-label="Last checked: not yet">
+            <span
+                className="dashboard-cell-time-dash"
+                aria-label="Last checked: not yet"
+            >
                 —
             </span>
         );
@@ -192,11 +206,11 @@ function MonitorTable({ rows }: MonitorTableProps) {
     if (rows.length === 0) {
         return (
             <div className="dashboard-state-box" data-testid="empty-state">
-                <span className="dashboard-state-icon" aria-hidden="true">📡</span>
+                <span className="dashboard-state-icon" aria-hidden="true">
+                    📡
+                </span>
                 <h2>No monitors yet</h2>
-                <p>
-                    Start tracking your endpoints to see their health here.
-                </p>
+                <p>Start tracking your endpoints to see their health here.</p>
                 <Link
                     to="/monitors/new"
                     className="dashboard-button dashboard-button--primary"
@@ -211,7 +225,9 @@ function MonitorTable({ rows }: MonitorTableProps) {
     return (
         <div className="dashboard-table-container">
             <table className="dashboard-table">
-                <caption className="dashboard-sr-only">Monitor health overview</caption>
+                <caption className="dashboard-sr-only">
+                    Monitor health overview
+                </caption>
                 <thead>
                     <tr>
                         <th scope="col">Monitor</th>
@@ -257,7 +273,10 @@ function MonitorTable({ rows }: MonitorTableProps) {
                                         {row.lastResponseTimeMs} ms
                                     </span>
                                 ) : (
-                                    <span className="dashboard-cell-time-dash" aria-label="Response time: not available">
+                                    <span
+                                        className="dashboard-cell-time-dash"
+                                        aria-label="Response time: not available"
+                                    >
                                         —
                                     </span>
                                 )}
@@ -274,7 +293,9 @@ function MonitorTable({ rows }: MonitorTableProps) {
                                         🚨 Open incident
                                     </Link>
                                 ) : (
-                                    <span className="dashboard-no-incident">—</span>
+                                    <span className="dashboard-no-incident">
+                                        —
+                                    </span>
                                 )}
                             </td>
                         </tr>
@@ -316,11 +337,15 @@ export function DashboardPage() {
                 <div className="dashboard-header-text">
                     <h1>Dashboard</h1>
                     <p className="dashboard-subtitle">
-                        Real-time health overview of all your monitored endpoints.
+                        Real-time health overview of all your monitored
+                        endpoints.
                     </p>
                 </div>
                 <div className="dashboard-refresh-info" aria-live="polite">
-                    <span className="dashboard-refresh-dot" aria-hidden="true" />
+                    <span
+                        className="dashboard-refresh-dot"
+                        aria-hidden="true"
+                    />
                     Auto-refreshes every 30s
                 </div>
             </header>
@@ -339,7 +364,12 @@ export function DashboardPage() {
                     data-testid="error-state"
                 >
                     <div className="dashboard-state-box">
-                        <span className="dashboard-state-icon" aria-hidden="true">⚠️</span>
+                        <span
+                            className="dashboard-state-icon"
+                            aria-hidden="true"
+                        >
+                            ⚠️
+                        </span>
                         <h2>Could not load dashboard</h2>
                         <p>
                             {error instanceof Error
@@ -359,7 +389,10 @@ export function DashboardPage() {
             )}
 
             {/* Monitor table */}
-            <section className="dashboard-monitors-card" aria-labelledby="monitors-heading">
+            <section
+                className="dashboard-monitors-card"
+                aria-labelledby="monitors-heading"
+            >
                 <div className="dashboard-monitors-card-header">
                     <h2 id="monitors-heading">All Monitors</h2>
                     <Link
@@ -385,9 +418,7 @@ export function DashboardPage() {
                 )}
 
                 {/* Table — also renders during background refresh keeping previous data */}
-                {data && (
-                    <MonitorTable rows={data.rows} />
-                )}
+                {data && <MonitorTable rows={data.rows} />}
 
                 {/* Error inside table area (only if no previous data) */}
                 {isError && !data && null /* already handled above */}

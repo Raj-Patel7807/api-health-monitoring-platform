@@ -81,7 +81,10 @@ function stubFetch(
                             page_size: 500,
                             total: incidents.length,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }
@@ -94,15 +97,25 @@ function stubFetch(
                             page_size: 500,
                             total: monitors.length,
                         }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }
             // auth/me - fallback
             return Promise.resolve(
                 new Response(
-                    JSON.stringify({ id: "u1", email: "a@b.com", team: { role: "admin" } }),
-                    { status: 200, headers: { "Content-Type": "application/json" } },
+                    JSON.stringify({
+                        id: "u1",
+                        email: "a@b.com",
+                        team: { role: "admin" },
+                    }),
+                    {
+                        status: 200,
+                        headers: { "Content-Type": "application/json" },
+                    },
                 ),
             );
         }),
@@ -147,15 +160,25 @@ describe("DashboardPage", () => {
         expect(await screen.findByTestId("summary-cards")).toBeInTheDocument();
 
         // Total = 3
-        expect(screen.getByTestId("summary-card-total-monitors")).toHaveTextContent("3");
+        expect(
+            screen.getByTestId("summary-card-total-monitors"),
+        ).toHaveTextContent("3");
         // Healthy = 1 (mon-1)
-        expect(screen.getByTestId("summary-card-healthy")).toHaveTextContent("1");
+        expect(screen.getByTestId("summary-card-healthy")).toHaveTextContent(
+            "1",
+        );
         // Failing = 1 (mon-2)
-        expect(screen.getByTestId("summary-card-failing")).toHaveTextContent("1");
+        expect(screen.getByTestId("summary-card-failing")).toHaveTextContent(
+            "1",
+        );
         // Unknown = 1 (mon-3, disabled)
-        expect(screen.getByTestId("summary-card-unknown")).toHaveTextContent("1");
+        expect(screen.getByTestId("summary-card-unknown")).toHaveTextContent(
+            "1",
+        );
         // Open incidents = 1
-        expect(screen.getByTestId("summary-card-open-incidents")).toHaveTextContent("1");
+        expect(
+            screen.getByTestId("summary-card-open-incidents"),
+        ).toHaveTextContent("1");
     });
 
     // ── Monitor table ──────────────────────────────────────────────────────
@@ -163,20 +186,24 @@ describe("DashboardPage", () => {
     it("renders monitor rows with name, URL, and status badge text", async () => {
         stubFetch(
             [
-                makeMonitor({ id: "mon-1", name: "Checkout API", consecutive_failures: 0 }),
+                makeMonitor({
+                    id: "mon-1",
+                    name: "Checkout API",
+                    consecutive_failures: 0,
+                }),
             ],
             [],
         );
         renderApp();
 
         expect(await screen.findByText("Checkout API")).toBeInTheDocument();
-        expect(screen.getByText("https://api.example.com/pay")).toBeInTheDocument();
+        expect(
+            screen.getByText("https://api.example.com/pay"),
+        ).toBeInTheDocument();
 
         // Status badge text must always be visible (not color-only)
         // Use aria-label to get the specific badge span, not the summary card label
-        const badgeSpan = await screen.findByRole("cell", {
-            // The status badge cell doesn't have a specific role, use the row's cell
-        }).catch(() => null);
+        
 
         // Look for the badge within the monitor row
         const monitorRow = screen.getByTestId("monitor-row-mon-1");
@@ -184,10 +211,7 @@ describe("DashboardPage", () => {
     });
 
     it("renders Failing badge for a monitor with consecutive_failures > 0", async () => {
-        stubFetch(
-            [makeMonitor({ id: "mon-1", consecutive_failures: 3 })],
-            [],
-        );
+        stubFetch([makeMonitor({ id: "mon-1", consecutive_failures: 3 })], []);
         renderApp();
 
         const monitorRow = await screen.findByTestId("monitor-row-mon-1");
@@ -196,7 +220,13 @@ describe("DashboardPage", () => {
 
     it("renders Unknown badge for a disabled monitor", async () => {
         stubFetch(
-            [makeMonitor({ id: "mon-1", enabled: false, consecutive_failures: 0 })],
+            [
+                makeMonitor({
+                    id: "mon-1",
+                    enabled: false,
+                    consecutive_failures: 0,
+                }),
+            ],
             [],
         );
         renderApp();
@@ -210,8 +240,16 @@ describe("DashboardPage", () => {
     it("lists failing monitors before healthy monitors", async () => {
         stubFetch(
             [
-                makeMonitor({ id: "mon-1", name: "Healthy API", consecutive_failures: 0 }),
-                makeMonitor({ id: "mon-2", name: "Broken API", consecutive_failures: 5 }),
+                makeMonitor({
+                    id: "mon-1",
+                    name: "Healthy API",
+                    consecutive_failures: 0,
+                }),
+                makeMonitor({
+                    id: "mon-2",
+                    name: "Broken API",
+                    consecutive_failures: 5,
+                }),
             ],
             [],
         );
@@ -219,8 +257,12 @@ describe("DashboardPage", () => {
 
         const rows = await screen.findAllByRole("row");
         const textContent = rows.map((r) => r.textContent ?? "");
-        const brokenIdx = textContent.findIndex((t) => t.includes("Broken API"));
-        const healthyIdx = textContent.findIndex((t) => t.includes("Healthy API"));
+        const brokenIdx = textContent.findIndex((t) =>
+            t.includes("Broken API"),
+        );
+        const healthyIdx = textContent.findIndex((t) =>
+            t.includes("Healthy API"),
+        );
         expect(brokenIdx).toBeLessThan(healthyIdx);
     });
 
@@ -241,10 +283,7 @@ describe("DashboardPage", () => {
     });
 
     it("shows dash (—) in incident column when no open incident", async () => {
-        stubFetch(
-            [makeMonitor({ id: "mon-1", consecutive_failures: 0 })],
-            [],
-        );
+        stubFetch([makeMonitor({ id: "mon-1", consecutive_failures: 0 })], []);
         renderApp();
 
         const monitorRow = await screen.findByTestId("monitor-row-mon-1");
@@ -256,10 +295,7 @@ describe("DashboardPage", () => {
     // ── Last-checked cell ──────────────────────────────────────────────────
 
     it("renders dash for last-checked when next_check_at is null", async () => {
-        stubFetch(
-            [makeMonitor({ id: "mon-1", next_check_at: null })],
-            [],
-        );
+        stubFetch([makeMonitor({ id: "mon-1", next_check_at: null })], []);
         renderApp();
 
         const monitorRow = await screen.findByTestId("monitor-row-mon-1");
@@ -271,13 +307,12 @@ describe("DashboardPage", () => {
     // ── Monitors link ──────────────────────────────────────────────────────
 
     it("renders a link to the monitor detail page for each monitor", async () => {
-        stubFetch(
-            [makeMonitor({ id: "mon-abc", name: "My API" })],
-            [],
-        );
+        stubFetch([makeMonitor({ id: "mon-abc", name: "My API" })], []);
         renderApp();
 
-        const link = await screen.findByRole("link", { name: /view monitor my api/i });
+        const link = await screen.findByRole("link", {
+            name: /view monitor my api/i,
+        });
         expect(link).toHaveAttribute("href", "/monitors/mon-abc");
     });
 
@@ -309,28 +344,53 @@ describe("DashboardPage", () => {
                     attempt++;
                     if (attempt === 1) {
                         return Promise.resolve(
-                            new Response("Service Unavailable", { status: 503 }),
+                            new Response("Service Unavailable", {
+                                status: 503,
+                            }),
                         );
                     }
                     return Promise.resolve(
                         new Response(
-                            JSON.stringify({ items: monitors, page: 1, page_size: 500, total: 1 }),
-                            { status: 200, headers: { "Content-Type": "application/json" } },
+                            JSON.stringify({
+                                items: monitors,
+                                page: 1,
+                                page_size: 500,
+                                total: 1,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
                         ),
                     );
                 }
                 if (url.includes("/incidents")) {
                     return Promise.resolve(
                         new Response(
-                            JSON.stringify({ items: [], page: 1, page_size: 500, total: 0 }),
-                            { status: 200, headers: { "Content-Type": "application/json" } },
+                            JSON.stringify({
+                                items: [],
+                                page: 1,
+                                page_size: 500,
+                                total: 0,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
                         ),
                     );
                 }
                 return Promise.resolve(
                     new Response(
-                        JSON.stringify({ id: "u1", email: "a@b.com", team: { role: "admin" } }),
-                        { status: 200, headers: { "Content-Type": "application/json" } },
+                        JSON.stringify({
+                            id: "u1",
+                            email: "a@b.com",
+                            team: { role: "admin" },
+                        }),
+                        {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" },
+                        },
                     ),
                 );
             }),
@@ -339,7 +399,9 @@ describe("DashboardPage", () => {
         renderApp();
 
         expect(
-            await screen.findByRole("heading", { name: /could not load dashboard/i }),
+            await screen.findByRole("heading", {
+                name: /could not load dashboard/i,
+            }),
         ).toBeInTheDocument();
 
         const retryBtn = screen.getByTestId("retry-btn");
