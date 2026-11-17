@@ -203,7 +203,6 @@ describe("DashboardPage", () => {
 
         // Status badge text must always be visible (not color-only)
         // Use aria-label to get the specific badge span, not the summary card label
-        
 
         // Look for the badge within the monitor row
         const monitorRow = screen.getByTestId("monitor-row-mon-1");
