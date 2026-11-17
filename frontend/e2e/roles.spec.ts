@@ -148,45 +148,48 @@ test("RBAC flow: admin signup → add monitor → add read_only member → login
         }
     });
 
-    await page.route(/\/api\/v1\/team\/members(\?.*)?$/, async (route: Route) => {
-        if (route.request().method() === "GET") {
-            if (currentUser === "read_only") {
+    await page.route(
+        /\/api\/v1\/team\/members(\?.*)?$/,
+        async (route: Route) => {
+            if (route.request().method() === "GET") {
+                if (currentUser === "read_only") {
+                    await route.fulfill({
+                        status: 403,
+                        contentType: "application/json",
+                        body: JSON.stringify({
+                            detail: "Forbidden: insufficient permissions.",
+                        }),
+                    });
+                } else {
+                    await route.fulfill({
+                        status: 200,
+                        contentType: "application/json",
+                        body: JSON.stringify({
+                            items: members,
+                            total: members.length,
+                        }),
+                    });
+                }
+            } else if (route.request().method() === "POST") {
+                const body = JSON.parse(route.request().postData() ?? "{}");
+                const newMember = {
+                    user_id: "user-readonly",
+                    full_name: "Read Only User",
+                    email: body.email,
+                    role: body.role,
+                    joined_at: new Date().toISOString(),
+                };
+                members.push(newMember);
                 await route.fulfill({
-                    status: 403,
+                    status: 201,
                     contentType: "application/json",
-                    body: JSON.stringify({
-                        detail: "Forbidden: insufficient permissions.",
-                    }),
+                    body: JSON.stringify(newMember),
                 });
             } else {
-                await route.fulfill({
-                    status: 200,
-                    contentType: "application/json",
-                    body: JSON.stringify({
-                        items: members,
-                        total: members.length,
-                    }),
-                });
+                await route.continue();
             }
-        } else if (route.request().method() === "POST") {
-            const body = JSON.parse(route.request().postData() ?? "{}");
-            const newMember = {
-                user_id: "user-readonly",
-                full_name: "Read Only User",
-                email: body.email,
-                role: body.role,
-                joined_at: new Date().toISOString(),
-            };
-            members.push(newMember);
-            await route.fulfill({
-                status: 201,
-                contentType: "application/json",
-                body: JSON.stringify(newMember),
-            });
-        } else {
-            await route.continue();
-        }
-    });
+        },
+    );
 
     /* ── 1. Admin signs up ── */
     await page.goto("/signup");
@@ -207,7 +210,9 @@ test("RBAC flow: admin signup → add monitor → add read_only member → login
 
     // Verify admin sees Add monitor button and Members link
     await expect(page.locator('[data-testid="add-monitor-btn"]')).toBeVisible();
-    await expect(page.locator('[data-testid="nav-members-link"]')).toBeVisible();
+    await expect(
+        page.locator('[data-testid="nav-members-link"]'),
+    ).toBeVisible();
 
     /* ── 2. Admin adds a monitor ── */
     await page.click('[data-testid="add-monitor-btn"]');
@@ -288,7 +293,9 @@ test("RBAC flow: admin signup → add monitor → add read_only member → login
     ).not.toBeVisible();
 
     // Actions column is NOT visible
-    await expect(page.getByRole("columnheader", { name: "Actions" })).not.toBeVisible();
+    await expect(
+        page.getByRole("columnheader", { name: "Actions" }),
+    ).not.toBeVisible();
 
     // Members link in AppNav is NOT visible
     await expect(
@@ -301,7 +308,9 @@ test("RBAC flow: admin signup → add monitor → add read_only member → login
         page.getByRole("heading", { name: "Access Denied" }),
     ).toBeVisible();
     await expect(
-        page.getByText(/You do not have permission to view or manage team members/i),
+        page.getByText(
+            /You do not have permission to view or manage team members/i,
+        ),
     ).toBeVisible();
     await expect(
         page.getByRole("link", { name: "Back to monitors" }),

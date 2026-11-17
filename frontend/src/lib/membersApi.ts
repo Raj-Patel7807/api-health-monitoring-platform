@@ -51,7 +51,8 @@ function parseErrorResponse(status: number, data: unknown): ApiError {
         if (record.error && typeof record.error === "object") {
             const errObj = record.error as Record<string, unknown>;
             if (typeof errObj.code === "string") code = errObj.code;
-            if (typeof errObj.message === "string") message = cleanMsg(errObj.message);
+            if (typeof errObj.message === "string")
+                message = cleanMsg(errObj.message);
         } else if (record.detail !== undefined) {
             if (typeof record.detail === "string") {
                 message = cleanMsg(record.detail);

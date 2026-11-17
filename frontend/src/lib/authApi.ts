@@ -1,4 +1,9 @@
-import { saveTokens, getRefreshToken, clearTokens, getAccessToken } from "./auth";
+import {
+    saveTokens,
+    getRefreshToken,
+    clearTokens,
+    getAccessToken,
+} from "./auth";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 

@@ -169,7 +169,9 @@ export function MonitorsPage() {
                                             <th scope="col">Interval</th>
                                             <th scope="col">Expected</th>
                                             <th scope="col">Created</th>
-                                            {!isReadOnly && <th scope="col">Actions</th>}
+                                            {!isReadOnly && (
+                                                <th scope="col">Actions</th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody>

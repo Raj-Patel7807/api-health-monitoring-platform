@@ -115,49 +115,54 @@ describe("MembersPage (US-19)", () => {
         });
 
         let membersList = [...mockMembers];
-        const mockFetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-            if (url.includes("/api/v1/team/members") && init?.method === "POST") {
-                const body = JSON.parse(init.body as string);
-                membersList = [
-                    ...membersList,
-                    {
-                        user_id: "u-3",
-                        full_name: "Charlie Viewer",
-                        email: body.email,
-                        role: body.role,
-                        joined_at: "2026-10-03T10:00:00Z",
-                    },
-                ];
-                return Promise.resolve(
-                    new Response(
-                        JSON.stringify({
+        const mockFetch = vi
+            .fn()
+            .mockImplementation((url: string, init?: RequestInit) => {
+                if (
+                    url.includes("/api/v1/team/members") &&
+                    init?.method === "POST"
+                ) {
+                    const body = JSON.parse(init.body as string);
+                    membersList = [
+                        ...membersList,
+                        {
                             user_id: "u-3",
+                            full_name: "Charlie Viewer",
                             email: body.email,
                             role: body.role,
-                        }),
-                        {
-                            status: 201,
-                            headers: { "Content-Type": "application/json" },
+                            joined_at: "2026-10-03T10:00:00Z",
                         },
-                    ),
-                );
-            }
-            if (url.includes("/api/v1/team/members")) {
-                return Promise.resolve(
-                    new Response(
-                        JSON.stringify({
-                            items: membersList,
-                            total: membersList.length,
-                        }),
-                        {
-                            status: 200,
-                            headers: { "Content-Type": "application/json" },
-                        },
-                    ),
-                );
-            }
-            return Promise.reject(new Error(`Unexpected url: ${url}`));
-        });
+                    ];
+                    return Promise.resolve(
+                        new Response(
+                            JSON.stringify({
+                                user_id: "u-3",
+                                email: body.email,
+                                role: body.role,
+                            }),
+                            {
+                                status: 201,
+                                headers: { "Content-Type": "application/json" },
+                            },
+                        ),
+                    );
+                }
+                if (url.includes("/api/v1/team/members")) {
+                    return Promise.resolve(
+                        new Response(
+                            JSON.stringify({
+                                items: membersList,
+                                total: membersList.length,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
+                        ),
+                    );
+                }
+                return Promise.reject(new Error(`Unexpected url: ${url}`));
+            });
         vi.stubGlobal("fetch", mockFetch);
 
         renderMembersPage();
@@ -193,41 +198,48 @@ describe("MembersPage (US-19)", () => {
             refetch: vi.fn(),
         });
 
-        const mockFetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-            if (url.includes("/api/v1/team/members/u-1") && init?.method === "PATCH") {
-                return Promise.resolve(
-                    new Response(
-                        JSON.stringify({
-                            detail: "Cannot demote the last admin of the team.",
-                        }),
-                        {
-                            status: 409,
-                            headers: { "Content-Type": "application/json" },
-                        },
-                    ),
-                );
-            }
-            if (url.includes("/api/v1/team/members")) {
-                return Promise.resolve(
-                    new Response(
-                        JSON.stringify({
-                            items: mockMembers,
-                            total: 2,
-                        }),
-                        {
-                            status: 200,
-                            headers: { "Content-Type": "application/json" },
-                        },
-                    ),
-                );
-            }
-            return Promise.reject(new Error(`Unexpected url: ${url}`));
-        });
+        const mockFetch = vi
+            .fn()
+            .mockImplementation((url: string, init?: RequestInit) => {
+                if (
+                    url.includes("/api/v1/team/members/u-1") &&
+                    init?.method === "PATCH"
+                ) {
+                    return Promise.resolve(
+                        new Response(
+                            JSON.stringify({
+                                detail: "Cannot demote the last admin of the team.",
+                            }),
+                            {
+                                status: 409,
+                                headers: { "Content-Type": "application/json" },
+                            },
+                        ),
+                    );
+                }
+                if (url.includes("/api/v1/team/members")) {
+                    return Promise.resolve(
+                        new Response(
+                            JSON.stringify({
+                                items: mockMembers,
+                                total: 2,
+                            }),
+                            {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" },
+                            },
+                        ),
+                    );
+                }
+                return Promise.reject(new Error(`Unexpected url: ${url}`));
+            });
         vi.stubGlobal("fetch", mockFetch);
 
         renderMembersPage();
 
-        expect(await screen.findByTestId("role-select-u-1")).toBeInTheDocument();
+        expect(
+            await screen.findByTestId("role-select-u-1"),
+        ).toBeInTheDocument();
 
         // Attempt demoting the last admin to operator
         fireEvent.change(screen.getByTestId("role-select-u-1"), {
@@ -236,7 +248,9 @@ describe("MembersPage (US-19)", () => {
 
         // Verify toast error displays 409 detail
         expect(
-            await screen.findByText("Cannot demote the last admin of the team."),
+            await screen.findByText(
+                "Cannot demote the last admin of the team.",
+            ),
         ).toBeInTheDocument();
 
         // Verify screen still shows admin role for u-1
@@ -286,7 +300,9 @@ describe("MembersPage (US-19)", () => {
         expect(
             screen.queryByRole("heading", { name: "Add a team member" }),
         ).not.toBeInTheDocument();
-        expect(screen.queryByLabelText("Email address")).not.toBeInTheDocument();
+        expect(
+            screen.queryByLabelText("Email address"),
+        ).not.toBeInTheDocument();
         expect(screen.queryByTestId("add-member-btn")).not.toBeInTheDocument();
 
         // Wait for members to render
@@ -297,7 +313,9 @@ describe("MembersPage (US-19)", () => {
         expect(screen.queryByTestId("role-select-u-2")).not.toBeInTheDocument();
 
         expect(screen.getByTestId("role-badge-u-1")).toHaveTextContent("Admin");
-        expect(screen.getByTestId("role-badge-u-2")).toHaveTextContent("Operator");
+        expect(screen.getByTestId("role-badge-u-2")).toHaveTextContent(
+            "Operator",
+        );
     });
 
     it("read_only view: direct navigation renders Access Denied page with Back to monitors link", async () => {
@@ -318,7 +336,9 @@ describe("MembersPage (US-19)", () => {
             await screen.findByRole("heading", { name: "Access Denied" }),
         ).toBeInTheDocument();
         expect(
-            screen.getByText(/You do not have permission to view or manage team members/i),
+            screen.getByText(
+                /You do not have permission to view or manage team members/i,
+            ),
         ).toBeInTheDocument();
         const backLink = screen.getByRole("link", { name: "Back to monitors" });
         expect(backLink).toBeInTheDocument();
@@ -371,6 +391,8 @@ describe("MembersPage (US-19)", () => {
         ).toBeInTheDocument();
 
         // The screen does not crash and the nav remains usable
-        expect(screen.getByLabelText("Main platform navigation")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText("Main platform navigation"),
+        ).toBeInTheDocument();
     });
 });

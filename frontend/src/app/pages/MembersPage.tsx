@@ -54,7 +54,9 @@ export function MembersPage() {
             setNewEmail("");
             setNewRole("operator");
             setFormError(null);
-            await queryClient.invalidateQueries({ queryKey: ["team", "members"] });
+            await queryClient.invalidateQueries({
+                queryKey: ["team", "members"],
+            });
             addToast("Member added successfully.", "success");
         },
         onError: (err) => {
@@ -72,7 +74,9 @@ export function MembersPage() {
         mutationFn: ({ userId, role }: { userId: string; role: Role }) =>
             changeMemberRole(userId, role),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: ["team", "members"] });
+            await queryClient.invalidateQueries({
+                queryKey: ["team", "members"],
+            });
             addToast("Member role updated successfully.", "success");
         },
         onError: (err) => {
@@ -83,7 +87,9 @@ export function MembersPage() {
                     : "Could not change role. Please try again.";
             addToast(message, "error");
             // Invalidate queries to guarantee UI reflects the true database state
-            void queryClient.invalidateQueries({ queryKey: ["team", "members"] });
+            void queryClient.invalidateQueries({
+                queryKey: ["team", "members"],
+            });
         },
     });
 
@@ -110,8 +116,9 @@ export function MembersPage() {
                 <div role="alert" className="members-card members-state-box">
                     <h2>Access Denied</h2>
                     <p>
-                        You do not have permission to view or manage team members.
-                        This area is restricted to team administrators and operators.
+                        You do not have permission to view or manage team
+                        members. This area is restricted to team administrators
+                        and operators.
                     </p>
                     <Link
                         to="/monitors"
@@ -137,7 +144,8 @@ export function MembersPage() {
                     <div className="members-header-text">
                         <h1>Team Members</h1>
                         <p className="members-subtitle">
-                            Manage who has access to your team and their permission roles.
+                            Manage who has access to your team and their
+                            permission roles.
                         </p>
                     </div>
                 </header>
@@ -173,21 +181,30 @@ export function MembersPage() {
                             noValidate
                         >
                             <div className="members-form-group">
-                                <label htmlFor="member-email">Email address</label>
+                                <label htmlFor="member-email">
+                                    Email address
+                                </label>
                                 <input
                                     id="member-email"
                                     type="email"
                                     className="members-input"
                                     placeholder="colleague@example.com"
                                     value={newEmail}
-                                    onChange={(e) => setNewEmail(e.target.value)}
+                                    onChange={(e) =>
+                                        setNewEmail(e.target.value)
+                                    }
                                     disabled={addMemberMutation.isPending}
                                     required
                                 />
                             </div>
 
-                            <div className="members-form-group" style={{ maxWidth: "200px" }}>
-                                <label htmlFor="member-role">Assigned role</label>
+                            <div
+                                className="members-form-group"
+                                style={{ maxWidth: "200px" }}
+                            >
+                                <label htmlFor="member-role">
+                                    Assigned role
+                                </label>
                                 <select
                                     id="member-role"
                                     className="members-select"
@@ -295,11 +312,14 @@ export function MembersPage() {
                                                         value={member.role}
                                                         aria-label={`Change role for ${member.email}`}
                                                         data-testid={`role-select-${member.user_id}`}
-                                                        disabled={changeRoleMutation.isPending}
+                                                        disabled={
+                                                            changeRoleMutation.isPending
+                                                        }
                                                         onChange={(e) =>
                                                             handleRoleChange(
                                                                 member.user_id,
-                                                                e.target.value as Role,
+                                                                e.target
+                                                                    .value as Role,
                                                             )
                                                         }
                                                     >
@@ -318,9 +338,11 @@ export function MembersPage() {
                                                         className={`members-role-badge members-role-badge--${member.role}`}
                                                         data-testid={`role-badge-${member.user_id}`}
                                                     >
-                                                        {member.role === "read_only"
+                                                        {member.role ===
+                                                        "read_only"
                                                             ? "Read-only"
-                                                            : member.role === "operator"
+                                                            : member.role ===
+                                                                "operator"
                                                               ? "Operator"
                                                               : "Admin"}
                                                     </span>

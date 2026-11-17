@@ -83,7 +83,9 @@ describe("MonitorsPage — role-aware controls (US-19)", () => {
         expect(
             await screen.findByRole("heading", { name: "Monitors" }),
         ).toBeInTheDocument();
-        expect(await screen.findByText("Production Gateway")).toBeInTheDocument();
+        expect(
+            await screen.findByText("Production Gateway"),
+        ).toBeInTheDocument();
 
         // Add monitor button must NOT be present
         expect(screen.queryByTestId("add-monitor-btn")).not.toBeInTheDocument();
@@ -99,7 +101,9 @@ describe("MonitorsPage — role-aware controls (US-19)", () => {
         expect(screen.queryByText("Actions")).not.toBeInTheDocument();
 
         // AppNav Members link must NOT be present for read_only
-        expect(screen.queryByRole("link", { name: /members/i })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("link", { name: /members/i }),
+        ).not.toBeInTheDocument();
     });
 
     it("admin user sees Add monitor button, Edit links, Delete buttons, and Members link in nav", async () => {
@@ -142,7 +146,9 @@ describe("MonitorsPage — role-aware controls (US-19)", () => {
         expect(
             await screen.findByRole("heading", { name: "Monitors" }),
         ).toBeInTheDocument();
-        expect(await screen.findByText("Production Gateway")).toBeInTheDocument();
+        expect(
+            await screen.findByText("Production Gateway"),
+        ).toBeInTheDocument();
 
         // Add monitor button must be present
         expect(screen.getByTestId("add-monitor-btn")).toBeInTheDocument();
@@ -155,6 +161,8 @@ describe("MonitorsPage — role-aware controls (US-19)", () => {
         expect(screen.getByText("Actions")).toBeInTheDocument();
 
         // AppNav Members link must be present for admin
-        expect(screen.getByRole("link", { name: /members/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole("link", { name: /members/i }),
+        ).toBeInTheDocument();
     });
 });
