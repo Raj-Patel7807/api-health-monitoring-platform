@@ -9,6 +9,7 @@ import {
 
 import { listMonitors, deleteMonitor, ApiError } from "../../lib/monitorsApi";
 import type { Monitor } from "../../lib/monitors";
+import { useCurrentRole } from "../hooks/useCurrentRole";
 import { AppNav } from "../components/AppNav";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ToastContainer } from "../components/Toast";
@@ -43,6 +44,8 @@ export function MonitorsPage() {
         queryFn: () => listMonitors(page, 20),
         placeholderData: keepPreviousData,
     });
+
+    const { isReadOnly } = useCurrentRole();
 
     // Derived after data is declared
     const pendingDeleteMonitor =
@@ -92,13 +95,15 @@ export function MonitorsPage() {
                             The endpoints your team keeps an eye on.
                         </p>
                     </div>
-                    <Link
-                        to="/monitors/new"
-                        className="monitors-button monitors-button--primary"
-                        data-testid="add-monitor-btn"
-                    >
-                        Add monitor
-                    </Link>
+                    {!isReadOnly && (
+                        <Link
+                            to="/monitors/new"
+                            className="monitors-button monitors-button--primary"
+                            data-testid="add-monitor-btn"
+                        >
+                            Add monitor
+                        </Link>
+                    )}
                 </header>
 
                 <section className="monitors-card">
@@ -138,12 +143,14 @@ export function MonitorsPage() {
                                 Start tracking your endpoints to detect downtime
                                 and incidents early.
                             </p>
-                            <Link
-                                to="/monitors/new"
-                                className="monitors-button monitors-button--primary"
-                            >
-                                Add your first monitor
-                            </Link>
+                            {!isReadOnly && (
+                                <Link
+                                    to="/monitors/new"
+                                    className="monitors-button monitors-button--primary"
+                                >
+                                    Add your first monitor
+                                </Link>
+                            )}
                         </div>
                     )}
 
@@ -162,7 +169,7 @@ export function MonitorsPage() {
                                             <th scope="col">Interval</th>
                                             <th scope="col">Expected</th>
                                             <th scope="col">Created</th>
-                                            <th scope="col">Actions</th>
+                                            {!isReadOnly && <th scope="col">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -215,30 +222,32 @@ export function MonitorsPage() {
                                                         monitor.created_at,
                                                     )}
                                                 </td>
-                                                <td>
-                                                    <div className="monitors-actions-cell">
-                                                        <Link
-                                                            to={`/monitors/${monitor.id}/edit`}
-                                                            className="monitors-edit-link"
-                                                            aria-label={`Edit ${monitor.name}`}
-                                                        >
-                                                            Edit
-                                                        </Link>
-                                                        <button
-                                                            type="button"
-                                                            className="monitors-delete-btn"
-                                                            aria-label={`Delete ${monitor.name}`}
-                                                            onClick={() =>
-                                                                setPendingDeleteId(
-                                                                    monitor.id,
-                                                                )
-                                                            }
-                                                            data-testid={`delete-${monitor.id}`}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                {!isReadOnly && (
+                                                    <td>
+                                                        <div className="monitors-actions-cell">
+                                                            <Link
+                                                                to={`/monitors/${monitor.id}/edit`}
+                                                                className="monitors-edit-link"
+                                                                aria-label={`Edit ${monitor.name}`}
+                                                            >
+                                                                Edit
+                                                            </Link>
+                                                            <button
+                                                                type="button"
+                                                                className="monitors-delete-btn"
+                                                                aria-label={`Delete ${monitor.name}`}
+                                                                onClick={() =>
+                                                                    setPendingDeleteId(
+                                                                        monitor.id,
+                                                                    )
+                                                                }
+                                                                data-testid={`delete-${monitor.id}`}
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))}
                                     </tbody>
