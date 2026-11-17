@@ -1,4 +1,16 @@
-"""Dependencies for team scoping and RBAC authorization on monitors."""
+"""Dependencies for team scoping and RBAC authorization on monitors.
+
+Team resolution rule (Sprint 4, day-1 decision 1)
+-------------------------------------------------
+A user's **active team** is the team they joined most recently, resolved by
+ordering ``TeamMembership.created_at`` descending and taking the first row.
+Signup creates exactly one team per user, so for most users this is their only
+team.  When a user is later added to a second team, that newer membership
+becomes the active one.  Callers may override via the ``X-Team-ID`` header or
+``team_id`` query parameter to address a specific team by UUID.
+
+See also: docs/design/API.md § "Active team (Sprint 4 decision)".
+"""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -29,8 +41,9 @@ async def get_team_context(
 ) -> TeamContext:
     """Resolve the active team context and membership role for the authenticated user.
 
-    Supports explicit team selection via X-Team-ID header or team_id query parameter,
-    defaulting to the user's primary/first active team membership.
+    Active team = most recently joined team (``created_at`` DESC).  Callers
+    may pin a specific team via the ``X-Team-ID`` header or ``team_id`` query
+    parameter.
     """
     target_team_id = x_team_id or team_id
 
@@ -46,7 +59,8 @@ async def get_team_context(
     if target_team_id is not None:
         stmt = stmt.where(TeamMembership.team_id == target_team_id)
 
-    stmt = stmt.order_by(TeamMembership.created_at.asc())
+    # Most recently joined team is the active one (Sprint 4 day-1 decision 1).
+    stmt = stmt.order_by(TeamMembership.created_at.desc())
     result = await db.execute(stmt)
     row = result.first()
 
@@ -81,5 +95,20 @@ def require_roles(allowed_roles: set[TeamRole]) -> Callable[..., TeamContext]:
     return _role_checker
 
 
+def require_role(*allowed_roles: TeamRole) -> Callable[..., TeamContext]:
+    """Dependency factory checking that the caller's team role is in allowed_roles."""
+    return require_roles(set(allowed_roles))
+
+
+# ---------------------------------------------------------------------------
+# Named dependency aliases (use these in routers, not raw require_roles calls)
+# ---------------------------------------------------------------------------
+
+#: Any authenticated team member (admin, operator, read_only).
 require_monitor_read = require_roles({TeamRole.admin, TeamRole.operator, TeamRole.read_only})
+
+#: Admin or operator — can create and edit resources.
 require_monitor_write = require_roles({TeamRole.admin, TeamRole.operator})
+
+#: Admin only — destructive or privileged operations (e.g. deleting a monitor).
+require_admin = require_roles({TeamRole.admin})
