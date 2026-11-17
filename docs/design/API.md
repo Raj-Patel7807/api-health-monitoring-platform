@@ -294,37 +294,107 @@ token (HTTP client errors often include the URL, so scrub it).
 
 ---
 
-## Sprint 4 — Dashboard & RBAC 📝  (US-13, US-19)
-
-Unchanged from v1.
+## Sprint 4 — Dashboard & RBAC ✅  (US-13, US-19)
 
 ### `GET /dashboard`
+Returns an aggregated operational health overview of all active monitors for the caller's team. Disabled and soft-deleted monitors are excluded. A monitor without a check result within the freshness window (last 24 hours) shows status `unknown`.
+
 ```json
-{ "monitors": [ {
-    "id": "uuid", "name": "Payment API", "status": "failing",
-    "last_checked_at": "2026-10-01T10:06:00Z", "last_response_time_ms": 842,
-    "open_incident_id": "uuid"
-} ],
-  "summary": { "total_monitors": 12, "healthy": 10, "failing": 2, "open_incidents": 2 } }
+{
+  "monitors": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "name": "Payment API",
+      "status": "failing",
+      "last_checked_at": "2026-10-01T10:06:00Z",
+      "last_response_time_ms": 842,
+      "open_incident_id": "7b134d19-d04b-4577-9be1-081e626e2e92"
+    }
+  ],
+  "summary": {
+    "total_monitors": 12,
+    "healthy": 9,
+    "failing": 2,
+    "unknown": 1,
+    "open_incidents": 2
+  }
+}
 ```
+
+- **Roles:** `admin`, `operator`, `read_only`.
+- **Derived status rules:**
+  - `unknown`: No check result recorded within the 24-hour freshness window (`last_checked_at` and `last_response_time_ms` are `null`).
+  - `failing`: Monitor has an open incident or its latest check result failed.
+  - `healthy`: Latest check result succeeded and no open incident exists.
+- **Ordering:** Failing monitors are returned first, followed by unknown, then healthy; tied monitors are sorted alphabetically by name.
+- **Summary:** Summary counts (`total_monitors`, `healthy`, `failing`, `unknown`, `open_incidents`) strictly match the returned `monitors` list.
 
 ### `GET /team/members`
+List all members belonging to the caller's team.
+
 ```json
-{ "items": [ { "user_id": "uuid", "email": "priya@gmail.com", "full_name": "Priya", "role": "operator" } ] }
+{
+  "items": [
+    {
+      "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "priya@gmail.com",
+      "full_name": "Priya",
+      "role": "operator"
+    }
+  ]
+}
 ```
-Roles: `admin`, `operator`.
+- **Roles:** `admin`, `operator`.
+- `read_only` receives `403`.
 
 ### `POST /team/members`
+Attach an existing user to the caller's team with the requested role.
+
 ```json
-{ "email": "arjun@gmail.com", "role": "read_only" }
+{
+  "email": "arjun@gmail.com",
+  "role": "read_only"
+}
 ```
-Role: `admin`. Attaches an existing user to the team.
+
+Response (`201 Created`):
+```json
+{
+  "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "arjun@gmail.com",
+  "full_name": "Arjun",
+  "role": "read_only"
+}
+```
+
+- **Role:** `admin` only (`operator` and `read_only` receive `403`).
+- Returns `404` if the email does not match any registered user.
+- Returns `409` if the user is already a member of this team.
+- Returns `422` if `role` is not one of `admin`, `operator`, `read_only`.
 
 ### `PATCH /team/members/{user_id}`
+Change the role of an existing member belonging to the caller's team.
+
 ```json
-{ "role": "operator" }
+{
+  "role": "operator"
+}
 ```
-Role: `admin`. Demoting the last remaining `admin` returns `409`.
+
+Response (`200 OK`):
+```json
+{
+  "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "priya@gmail.com",
+  "full_name": "Priya",
+  "role": "operator"
+}
+```
+
+- **Role:** `admin` only (`operator` and `read_only` receive `403`).
+- Returns `404` if the target `user_id` is not a member of the caller's team.
+- Returns `409` if the operation would demote the team's last remaining admin.
+- Returns `422` if `role` is not one of `admin`, `operator`, `read_only`.
 
 ### RBAC matrix
 
