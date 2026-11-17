@@ -1,0 +1,259 @@
+/* ─── Team Members & RBAC Styles (US-19) ────────────────────────────────── */
+
+.members-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+}
+
+.members-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.members-header-text h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--clr-text-primary);
+    margin: 0 0 var(--space-1) 0;
+}
+
+.members-subtitle {
+    color: var(--clr-text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* ── Add Member Form Card ─────────────────────────────────────────────────── */
+.members-form-card {
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.members-form-card h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    margin: 0 0 var(--space-4) 0;
+}
+
+.members-add-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-4);
+}
+
+.members-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1 1 240px;
+}
+
+.members-form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+}
+
+.members-input,
+.members-select {
+    width: 100%;
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    padding: var(--space-2) var(--space-3);
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+.members-input:focus,
+.members-select:focus {
+    outline: none;
+    border-color: var(--clr-accent);
+    box-shadow: 0 0 0 2px var(--clr-accent-soft);
+}
+
+.members-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.members-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.members-button--primary {
+    background: var(--clr-accent);
+    color: #fff;
+}
+
+.members-button--primary:not(:disabled):hover {
+    background: var(--clr-accent-hover, #2563eb);
+}
+
+.members-button--secondary {
+    background: var(--clr-bg-elevated);
+    border-color: var(--clr-border);
+    color: var(--clr-text-primary);
+}
+
+.members-button--secondary:not(:disabled):hover {
+    background: var(--clr-bg-muted);
+}
+
+/* ── Members List Card ───────────────────────────────────────────────────── */
+.members-card {
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.members-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.members-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.members-table th {
+    background: var(--clr-bg-elevated);
+    color: var(--clr-text-secondary);
+    font-weight: 600;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--clr-border);
+    white-space: nowrap;
+}
+
+.members-table td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--clr-border);
+    color: var(--clr-text-primary);
+    vertical-align: middle;
+}
+
+.members-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.members-table tbody tr:hover {
+    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.02));
+}
+
+.members-email-cell {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.85rem;
+    color: var(--clr-text-secondary);
+}
+
+/* ── Role Badges & Inline Role Selector ──────────────────────────────────── */
+.members-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.members-role-badge--admin {
+    background: rgba(147, 51, 234, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+.members-role-badge--operator {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.members-role-badge--read_only {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.members-role-select {
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-text-primary);
+    font-size: 0.85rem;
+    padding: var(--space-1) var(--space-2);
+    cursor: pointer;
+}
+
+.members-role-select:focus {
+    outline: none;
+    border-color: var(--clr-accent);
+}
+
+/* ── State Boxes (Loading, Error, Access Denied) ─────────────────────────── */
+.members-state-box {
+    padding: var(--space-8) var(--space-4);
+    text-align: center;
+    color: var(--clr-text-secondary);
+}
+
+.members-state-box h2 {
+    font-size: 1.25rem;
+    color: var(--clr-text-primary);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.members-state-box p {
+    max-width: 480px;
+    margin: 0 auto var(--space-4) auto;
+}
+
+.members-error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}

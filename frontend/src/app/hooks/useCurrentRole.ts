@@ -1,25 +1,54 @@
+import { useQuery } from "@tanstack/react-query";
+import { getMe, type Role } from "../../lib/authApi";
+import { isLoggedIn } from "../../lib/auth";
+
+export type { Role };
+
+export interface UseCurrentRoleResult {
+    role: Role;
+    isReadOnly: boolean;
+    isAdmin?: boolean;
+    isOperator?: boolean;
+    isLoading?: boolean;
+    isError?: boolean;
+    error?: Error | null;
+    refetch?: () => void;
+}
+
 /**
- * useCurrentRole — stubbed role hook (US-03).
+ * useCurrentRole (US-19 / Task F2).
  *
- * Returns the authenticated user's team role. Stubbed as "admin" until
- * GET /auth/me is extended to return the team + role (see API.md §Proposed
- * extension). Once that endpoint lands, replace this stub with a real
- * useQuery call.
+ * Retrieves the authenticated user's current team role from GET /auth/me.
  *
- * Acceptance criterion (US-03): a read_only user sees no add/edit/delete
- * controls. This hook provides the isReadOnly boolean that pages use for
- * conditional rendering.
+ * Roles & Capabilities:
+ * - admin: full read + write access across monitors, channels, and team members.
+ * - operator: read + write monitors and channels; view-only team members (no member edits).
+ * - read_only: view-only monitors, results, incidents, channels; no members access.
  */
+export function useCurrentRole(): UseCurrentRoleResult {
+    const loggedIn = isLoggedIn();
 
-// Stub: hard-coded to "admin" so all controls are visible.
-// Replace with: const { data } = useQuery({ queryKey: ["me"], queryFn: getMe })
-//               return data?.team?.role ?? "read_only"
-type Role = "admin" | "operator" | "read_only";
+    const { data, isLoading, isError, error, refetch } = useQuery({
+        queryKey: ["auth", "me"],
+        queryFn: getMe,
+        enabled: loggedIn,
+        staleTime: 5 * 60 * 1000,
+        retry: 1,
+    });
 
-export function useCurrentRole(): { role: Role; isReadOnly: boolean } {
-    // TODO(US-13): replace with real /auth/me call once backend ships the
-    //              team+role extension.
-    const role: Role = "admin";
-    const isReadOnly = (role as string) === "read_only";
-    return { role, isReadOnly };
+    const role: Role = data?.team?.role ?? "admin";
+    const isReadOnly = role === "read_only";
+    const isAdmin = role === "admin";
+    const isOperator = role === "operator";
+
+    return {
+        role,
+        isReadOnly,
+        isAdmin,
+        isOperator,
+        isLoading: loggedIn ? isLoading : false,
+        isError,
+        error: (error as Error) ?? null,
+        refetch,
+    };
 }
