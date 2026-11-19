@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.db.models import TeamRole
+
 # ---------------------------------------------------------------------------
 # Requests
 # ---------------------------------------------------------------------------
@@ -45,11 +47,22 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class TeamInResponse(BaseModel):
+    """Minimal team representation embedded in the /auth/me response (US-19)."""
+
+    id: uuid.UUID
+    name: str
+    role: TeamRole
+
+    model_config = {"from_attributes": True}
+
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     full_name: str
     is_active: bool
     created_at: datetime
+    team: TeamInResponse | None = None
 
     model_config = {"from_attributes": True}

@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.modules.monitors import service
 from app.modules.monitors.dependencies import (
     TeamContext,
+    require_admin,
     require_monitor_read,
     require_monitor_write,
 )
@@ -169,7 +170,7 @@ async def update_monitor(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_monitor(
     id: UUID,
-    context: Annotated[TeamContext, Depends(require_monitor_write)],
+    context: Annotated[TeamContext, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Soft delete a monitor by setting deleted_at and disabling it."""

@@ -1,4 +1,4 @@
-# API Contract — MVP (Sprints 2–4)
+# API Contract — MVP
 
 Base path: `/api/v1`. Frontend builds against this with mocks; backend updates
 this file **in the same PR** as any endpoint change.
@@ -7,17 +7,17 @@ this file **in the same PR** as any endpoint change.
 
 | Mark | Meaning |
 |---|---|
-| ✅ Implemented | Section written from the real backend code. |
-| 📝 Planned | Agreed shape, not built yet (Sprint 3 and 4). Backend confirms or adjusts in the first two days of the sprint. |
-| ❓ Verify | Carried over from the first version of this file. Not yet checked against code. |
+| ✅ Implemented | Written from the real backend code and checked against it. |
+| 📝 Planned | Agreed shape for Sprint 4, not built yet. Backend confirms or adjusts in the first two days. |
+| ❓ Verify | Built in an earlier sprint, but this shape has not been checked against the code yet. Whoever reads the router marks it ✅ or fixes the text. |
 
-## What changed from v1
+## What changed from v2
 
-- **Auth rewritten to match the code.** Signup returns only a token pair (no `user`/`team` object); refresh returns a new token pair; `GET /auth/me` added.
-- **Errors are FastAPI's default shape** (`{"detail": ...}`), not the custom `{"error": {...}}` shape v1 promised.
-- **Channel list semantics changed:** omitting `monitor_id` now returns all team channels, not only team-wide ones.
-- **Sprint 3 endpoints fully specified** (fields, enums, validation, error cases).
-- `/auth/me` extension proposed so the UI knows the user's team and role.
+- **Sprint 4 decisions recorded** (see "Decisions" at the end): how a user's team is resolved, who can delete a monitor, and the dashboard status values.
+- **`GET /auth/me` now returns `team` with the user's role** (Sprint 4).
+- **Dashboard and team members endpoints fully specified**, including errors.
+- **RBAC matrix rewritten per endpoint.** Deleting a monitor is admin-only; `read_only` users cannot view notification channels; viewing members needs admin or operator.
+- Sprint 3 endpoints are relabelled ❓ Verify, because they are built but their shapes were not compared with the code.
 
 ---
 
@@ -29,8 +29,15 @@ Send `Authorization: Bearer <access_token>` on every endpoint except
 
 - Access token lifetime: 15 minutes. Refresh token lifetime: 7 days.
 - A refresh token cannot be used as an access token (and vice versa) → 401.
+- The token carries only the user id. **The role is looked up on every request**, so a role change takes effect immediately.
 - Missing `Authorization` header: FastAPI returns 401 or 403 depending on its version.
   Frontend rule: treat any 401 as "try refresh once, then go to login".
+
+### Active team (Sprint 4 decision)
+A user's **active team is the team they joined most recently.** Every team-scoped
+endpoint ("the caller's team") uses it. Signup creates a team and makes the user
+its admin; if the user is later added to another team, that team becomes the
+active one, and the signup team stays in the database unused.
 
 ### Errors ✅
 Errors use FastAPI's default body. There is no custom error envelope.
@@ -53,10 +60,10 @@ under that field. Do not log auth error bodies (422 entries can echo input).
 | 401 | Missing/invalid/expired token, wrong credentials |
 | 403 | Authenticated but the role does not allow it, or account disabled |
 | 404 | Resource does not exist **or belongs to another team** (never reveal which) |
-| 409 | Conflict (duplicate email, last admin demotion, ...) |
+| 409 | Conflict (duplicate email, already a member, last admin demotion) |
 | 422 | Request body or query failed validation |
 
-### Pagination 📝
+### Pagination
 List endpoints marked *paginated* take `?page=1&page_size=20` (`page_size` max 100)
 and return:
 ```json
@@ -70,11 +77,11 @@ Endpoints marked *not paginated* return `{ "items": [ ... ] }`.
 
 ---
 
-## Auth ✅  (US-01)
+## Auth  (US-01)
 
-### `POST /auth/signup`
+### `POST /auth/signup` ✅
 Creates the user, a team, and an `admin` membership in one transaction. The
-user is logged in immediately, so the **frontend should store the tokens and go
+user is logged in immediately, so the **frontend stores the tokens and goes
 to the app, not back to the login page.**
 
 ```json
@@ -90,7 +97,7 @@ to the app, not back to the login page.**
 ```
 Errors: `409` duplicate email, `422` validation.
 
-### `POST /auth/login`
+### `POST /auth/login` ✅
 ```json
 // Request
 { "email": "rahul@gmail.com", "password": "••••••••" }   // password 1–128 chars
@@ -101,7 +108,7 @@ Errors: `409` duplicate email, `422` validation.
 Errors: `401` "Invalid email or password." (same message for wrong email and
 wrong password), `403` "Account is disabled.", `422`.
 
-### `POST /auth/refresh`
+### `POST /auth/refresh` ✅
 ```json
 // Request
 { "refresh_token": "jwt" }
@@ -111,29 +118,22 @@ wrong password), `403` "Account is disabled.", `422`.
 ```
 Errors: `401` invalid/expired token, wrong token type, or user not found/inactive.
 
-### `GET /auth/me`
-```json
-// 200 Response (current)
-{ "id": "uuid", "email": "rahul@gmail.com", "full_name": "Rahul Sharma",
-  "is_active": true, "created_at": "2026-10-01T10:00:00Z" }
-```
-
-**📝 Proposed extension (needed for role-aware UI in Sprint 3 and 4):**
+### `GET /auth/me` 📝
+Returns the current user and their role in the active team. Any authenticated user.
 ```json
 { "id": "uuid", "email": "rahul@gmail.com", "full_name": "Rahul Sharma",
   "is_active": true, "created_at": "2026-10-01T10:00:00Z",
   "team": { "id": "uuid", "name": "FinTech Engineering", "role": "admin" } }
 ```
-Without this, the frontend cannot tell whether to show edit controls for a
-`read_only` user. The token currently carries only the user id (`sub`).
+`team.role` is one of `admin`, `operator`, `read_only`. Until this ships, the
+response has no `team` field, and the frontend uses a stub role.
 
 ---
 
 ## Monitors ❓ Verify  (US-02)
 
-Carried over from v1. Check each shape against the implemented router.
-
 ### `GET /monitors` (paginated)
+Roles: any member.
 ```json
 { "items": [ {
     "id": "uuid", "name": "Payment API", "url": "https://api.example.com/health",
@@ -155,22 +155,22 @@ Limits (from the database): `method` in GET/HEAD/POST/PUT/PATCH/DELETE;
 `timeout_seconds` 1–60; `expected_status_code` 100–599; thresholds ≥ 1.
 
 ### `GET /monitors/{id}`
-List fields plus `timeout_seconds`, `failure_threshold`, `recovery_threshold`,
-`consecutive_failures`, `consecutive_successes`, `next_check_at`, `backoff_until`.
+Roles: any member. List fields plus `timeout_seconds`, `failure_threshold`,
+`recovery_threshold`, `consecutive_failures`, `consecutive_successes`,
+`next_check_at`, `backoff_until`.
 
 ### `PATCH /monitors/{id}`
 Same body as POST, every field optional. Roles: `admin`, `operator`.
 
 ### `DELETE /monitors/{id}`
-Soft delete. `204`. Role: `admin`.
+Soft delete. `204`. Role: **`admin` only.**
 
 ---
 
-## Sprint 3 — Results, Channels, Incidents, Alerts 📝
+## Results, Channels, Incidents, Alerts ❓ Verify  (Sprint 3: US-03, 08, 09, 10, 11)
 
-Build the role checks into every Sprint 3 endpoint from day one (a
-`require_role(...)` dependency based on the user's team membership). That avoids
-retrofitting all of them in Sprint 4.
+Built in Sprint 3. The shapes below are the agreed contract. Roles are the ones
+in the RBAC matrix at the end of this file.
 
 ### Enumerations
 
@@ -181,6 +181,8 @@ retrofitting all of them in Sprint 4.
 | incident `status` | `open`, `resolved` |
 | delivery `event_type` | `opened`, `resolved` |
 | delivery `status` | `pending`, `sent`, `failed` |
+| dashboard monitor `status` | `healthy`, `failing`, `unknown` |
+| member `role` | `admin`, `operator`, `read_only` |
 
 ### `GET /monitors/{monitor_id}/results` (paginated)
 Check history, newest first. Roles: any member.
@@ -202,9 +204,10 @@ all of them.)
 ```
 Notes: `http_status_code` and `response_time_ms` are `null` on timeouts and
 connection errors. `response_body_excerpt` is `null` for healthy checks and
-at most 500 characters otherwise. Errors: `404` monitor not found.
+at most 500 characters otherwise. The `degraded` status is not produced yet.
+Errors: `404` monitor not found.
 
-### Notification channels ✅ (US-03)
+### Notification channels
 
 Channel object (returned by every channel endpoint):
 ```json
@@ -230,11 +233,13 @@ What `secret_value` holds per type:
 `configuration` is an optional object for non-secret options. No keys are
 required for any type yet.
 
+All channel endpoints are for `admin` and `operator`. A `read_only` user gets
+`403`, even to list them.
+
 #### `GET /notification-channels` (not paginated)
 Query: `monitor_id=<uuid>` returns channels attached to that monitor;
 `scope=team` returns only team-wide channels. With no query, returns all
-channels for the team. Roles: `admin`, `operator`. A `read_only` user gets
-`403` (matches the RBAC matrix below).
+channels for the team.
 
 #### `POST /notification-channels`
 ```json
@@ -243,8 +248,8 @@ channels for the team. Roles: `admin`, `operator`. A `read_only` user gets
   "secret_value": "https://hooks.slack.com/services/T00/B00/XXXX",
   "configuration": {} }
 ```
-`201` returns the channel object. Roles: `admin`, `operator`.
-Errors: `404` monitor not found, `422` bad URL/email for the chosen type.
+`201` returns the channel object. Errors: `404` monitor not found, `422` bad
+URL/email for the chosen type.
 
 #### `PATCH /notification-channels/{id}`
 Optional fields: `name`, `is_enabled`, `secret_value`, `configuration`.
@@ -252,12 +257,8 @@ Omit `secret_value` to keep the current one. `type` and `monitor_id` cannot be
 changed (delete and recreate instead). `200` returns the channel object.
 
 #### `DELETE /notification-channels/{id}`
-`204`. Roles: `admin`, `operator`.
-
-> **Backend note:** `alert_deliveries` has a foreign key to
-> `notification_channels`, so a hard delete fails once a channel has any
-> delivery history. Add a `deleted_at` column in a migration; DELETE sets it,
-> the list hides deleted channels, and the alert dispatcher skips them.
+Soft delete, `204`. The channel disappears from the list and the alert
+dispatcher skips it; its past alert deliveries are kept.
 
 ### Incidents
 
@@ -268,17 +269,17 @@ Incident object:
   "failure_count": 3, "recovery_count": 0 }
 ```
 Incidents are created and resolved only by the backend state machine. There
-are no create, update or delete endpoints.
+are no create, update or delete endpoints. Roles: any member.
 
 #### `GET /incidents` (paginated)
 Query: `status=open|resolved`, `monitor_id=<uuid>`. Newest first (`opened_at`).
-Roles: any member.
 
 #### `GET /incidents/{id}`
 The incident object plus `monitor_url`. `404` if not found or not in the
-caller's team. (Acknowledge and timeline endpoints are out of Must Have scope.)
+caller's team.
 
 #### `GET /incidents/{id}/alert-deliveries` (not paginated)
+Roles: any member.
 ```json
 { "items": [ {
     "id": "uuid", "incident_id": "uuid",
@@ -289,136 +290,99 @@ caller's team. (Acknowledge and timeline endpoints are out of Must Have scope.)
 } ] }
 ```
 Read-only. There is at most one delivery per incident, channel and event type.
-`attempt_count` is 0–4. `error_message` must never contain the webhook URL or
-token (HTTP client errors often include the URL, so scrub it).
+`error_message` never contains the webhook URL or token.
 
 ---
 
-## Sprint 4 — Dashboard & RBAC ✅  (US-13, US-19)
+## Dashboard and team  📝  (Sprint 4: US-13, US-19)
 
 ### `GET /dashboard`
-Returns an aggregated operational health overview of all active monitors for the caller's team. Disabled and soft-deleted monitors are excluded. A monitor without a check result within the freshness window (last 24 hours) shows status `unknown`.
+One call for the whole dashboard. Roles: any member.
 
 ```json
-{
-  "monitors": [
-    {
-      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "Payment API",
-      "status": "failing",
-      "last_checked_at": "2026-10-01T10:06:00Z",
-      "last_response_time_ms": 842,
-      "open_incident_id": "7b134d19-d04b-4577-9be1-081e626e2e92"
-    }
-  ],
-  "summary": {
-    "total_monitors": 12,
-    "healthy": 9,
-    "failing": 2,
-    "unknown": 1,
-    "open_incidents": 2
-  }
-}
+{ "monitors": [ {
+    "id": "uuid", "name": "Payment API", "status": "failing",
+    "last_checked_at": "2026-10-01T10:06:00Z", "last_response_time_ms": 842,
+    "open_incident_id": "uuid"
+} ],
+  "summary": { "total_monitors": 12, "healthy": 9, "failing": 2, "unknown": 1, "open_incidents": 2 } }
 ```
 
-- **Roles:** `admin`, `operator`, `read_only`.
-- **Derived status rules:**
-  - `unknown`: No check result recorded within the 24-hour freshness window (`last_checked_at` and `last_response_time_ms` are `null`).
-  - `failing`: Monitor has an open incident or its latest check result failed.
-  - `healthy`: Latest check result succeeded and no open incident exists.
-- **Ordering:** Failing monitors are returned first, followed by unknown, then healthy; tied monitors are sorted alphabetically by name.
-- **Summary:** Summary counts (`total_monitors`, `healthy`, `failing`, `unknown`, `open_incidents`) strictly match the returned `monitors` list.
+Rules:
+- `status` is `failing` when the monitor has an open incident. It is `healthy` when it has a recent result and no open incident (one or two failures below the threshold are not yet an incident). It is `unknown` when it has no result in the last 24 hours.
+- Disabled and deleted monitors are not returned and are not counted.
+- Ordered failing first, then unknown, then healthy, and by name inside each group.
+- `last_checked_at`, `last_response_time_ms` and `open_incident_id` are `null` when there is nothing to show. `last_response_time_ms` is also `null` when the last check timed out or could not connect.
+- The backend uses a fixed number of queries no matter how many monitors there are.
 
-### `GET /team/members`
-List all members belonging to the caller's team.
-
+### `GET /team/members` (not paginated)
+Roles: `admin`, `operator`. `read_only` gets `403`.
 ```json
-{
-  "items": [
-    {
-      "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "email": "priya@gmail.com",
-      "full_name": "Priya",
-      "role": "operator"
-    }
-  ]
-}
+{ "items": [ { "user_id": "uuid", "email": "priya@gmail.com", "full_name": "Priya", "role": "operator" } ] }
 ```
-- **Roles:** `admin`, `operator`.
-- `read_only` receives `403`.
 
 ### `POST /team/members`
-Attach an existing user to the caller's team with the requested role.
-
+Role: `admin`. Adds an **existing** user to the caller's team; the user must
+have signed up already. This team becomes the user's active team.
 ```json
-{
-  "email": "arjun@gmail.com",
-  "role": "read_only"
-}
-```
+// Request
+{ "email": "arjun@gmail.com", "role": "read_only" }
 
-Response (`201 Created`):
-```json
-{
-  "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "arjun@gmail.com",
-  "full_name": "Arjun",
-  "role": "read_only"
-}
+// 201 Response
+{ "user_id": "uuid", "email": "arjun@gmail.com", "full_name": "Arjun", "role": "read_only" }
 ```
-
-- **Role:** `admin` only (`operator` and `read_only` receive `403`).
-- Returns `404` if the email does not match any registered user.
-- Returns `409` if the user is already a member of this team.
-- Returns `422` if `role` is not one of `admin`, `operator`, `read_only`.
+Errors: `404` no user with that email, `409` already a member, `422` bad role.
 
 ### `PATCH /team/members/{user_id}`
-Change the role of an existing member belonging to the caller's team.
-
+Role: `admin`.
 ```json
-{
-  "role": "operator"
-}
+// Request
+{ "role": "operator" }
+
+// 200 Response: the member object, same shape as above
 ```
+Errors: `404` the user is not a member of this team, `409` the change would
+leave the team with no `admin` (this includes an admin changing their own role
+when they are the last one), `422` bad role.
 
-Response (`200 OK`):
-```json
-{
-  "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "priya@gmail.com",
-  "full_name": "Priya",
-  "role": "operator"
-}
-```
+There is no endpoint to remove a member yet.
 
-- **Role:** `admin` only (`operator` and `read_only` receive `403`).
-- Returns `404` if the target `user_id` is not a member of the caller's team.
-- Returns `409` if the operation would demote the team's last remaining admin.
-- Returns `422` if `role` is not one of `admin`, `operator`, `read_only`.
+---
 
-### RBAC matrix
+## RBAC matrix
+
+Enforced by a `require_role(...)` dependency on every route below. A resource
+that belongs to another team returns `404` regardless of role.
 
 | Action | admin | operator | read_only |
 |---|:---:|:---:|:---:|
-| View monitors, results, incidents, dashboard | ✅ | ✅ | ✅ |
-| Create / edit / delete monitors | ✅ | ✅ | ❌ |
-| View, create, edit, delete notification channels | ✅ | ✅ | ❌ |
-| Manage team members and roles | ✅ | ❌ | ❌ |
+| View monitors, results, incidents, alert deliveries, dashboard | ✅ | ✅ | ✅ |
+| Create and edit monitors | ✅ | ✅ | ❌ |
+| Delete monitors | ✅ | ❌ | ❌ |
+| View, create, edit and delete notification channels | ✅ | ✅ | ❌ (403, even to view) |
+| View team members | ✅ | ✅ | ❌ |
+| Add members and change roles | ✅ | ❌ | ❌ |
+| `GET /auth/me` | ✅ | ✅ | ✅ |
+
+Public routes (no token): signup, login, refresh, the health check, and the API docs.
 
 A disallowed action returns `403` with `{"detail": "..."}`.
 
 ---
 
-## Open questions for the backend team
+## Decisions
 
-1. **One team per user?** Endpoints say "the caller's team". Signup creates one team per user, so confirm that a user has exactly one team for the MVP and how the backend resolves it.
-2. **`/auth/me` with team and role** (proposed above). Who adds it, and by when? Frontend needs it in week 5.
-3. **Error shape:** confirm there is no custom exception handler that changes the `{"detail": ...}` format.
-4. **Channel soft delete:** confirm the `deleted_at` migration (see the note under `DELETE /notification-channels`).
-5. **Monitors section:** someone who has read the monitor router should compare it with the shapes above and mark it ✅.
+Made on day 1 of Sprint 4:
+1. **Active team** is the team the user joined most recently (see Conventions).
+2. **Deleting a monitor** is admin only.
+3. **Dashboard statuses** are `healthy`, `failing`, `unknown`, with the rules above.
+
+Still to verify:
+- Compare the Monitors and Sprint 3 sections with the implemented routers and mark each ✅ or fix the text.
+- Confirm there is no custom exception handler that changes the `{"detail": ...}` error format.
 
 ## Not in this contract (deferred stories, do not build UI for these)
 
 Response assertions (US-07), maintenance windows (US-04), uptime history and
 rollups (US-14, US-24), reports (US-15), audit log (US-18), multi-region
-(US-20), notification retry detail (US-12).
+(US-20), notification retry detail (US-12), removing team members.
