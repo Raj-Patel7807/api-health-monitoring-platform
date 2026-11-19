@@ -7,6 +7,15 @@ export function AppNav() {
     return (
         <nav className="app-nav" aria-label="Main platform navigation">
             <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                    `app-nav-link${isActive ? " app-nav-link--active" : ""}`
+                }
+            >
+                <span aria-hidden="true">🏠</span>
+                <span>Dashboard</span>
+            </NavLink>
+            <NavLink
                 to="/monitors"
                 className={({ isActive }) =>
                     `app-nav-link${isActive ? " app-nav-link--active" : ""}`
