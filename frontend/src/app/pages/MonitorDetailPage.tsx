@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getMonitor, deleteMonitor, ApiError } from "../../lib/monitorsApi";
 import type { Monitor } from "../../lib/monitors";
+import { useCurrentRole } from "../hooks/useCurrentRole";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ToastContainer } from "../components/Toast";
 import { useToast } from "../components/useToast";
@@ -86,6 +87,7 @@ export function MonitorDetailPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { toasts, addToast, dismissToast } = useToast();
+    const { isReadOnly } = useCurrentRole();
 
     const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -217,24 +219,26 @@ export function MonitorDetailPage() {
                                 {monitor.url}
                             </p>
                         </div>
-                        <div className="detail-header-actions">
-                            <Link
-                                to={`/monitors/${monitor.id}/edit`}
-                                className="monitors-button monitors-button--secondary"
-                                aria-label={`Edit ${monitor.name}`}
-                            >
-                                Edit
-                            </Link>
-                            <button
-                                type="button"
-                                className="monitors-button monitors-button--danger"
-                                aria-label={`Delete ${monitor.name}`}
-                                onClick={() => setDeleteOpen(true)}
-                                data-testid="delete-monitor-btn"
-                            >
-                                Delete
-                            </button>
-                        </div>
+                        {!isReadOnly && (
+                            <div className="detail-header-actions">
+                                <Link
+                                    to={`/monitors/${monitor.id}/edit`}
+                                    className="monitors-button monitors-button--secondary"
+                                    aria-label={`Edit ${monitor.name}`}
+                                >
+                                    Edit
+                                </Link>
+                                <button
+                                    type="button"
+                                    className="monitors-button monitors-button--danger"
+                                    aria-label={`Delete ${monitor.name}`}
+                                    onClick={() => setDeleteOpen(true)}
+                                    data-testid="delete-monitor-btn"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
