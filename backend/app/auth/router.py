@@ -25,6 +25,7 @@ from app.auth.schemas import (
     LoginRequest,
     RefreshRequest,
     SignupRequest,
+    TeamInResponse,
     TokenResponse,
     UserResponse,
 )
@@ -171,6 +172,35 @@ async def refresh(
 @router.get("/me", response_model=UserResponse)
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserResponse:
-    """Return the profile of the currently authenticated user."""
-    return UserResponse.model_validate(current_user)
+    """Return the profile of the currently authenticated user including their active team.
+
+    Active team = most recently joined team (Sprint 4 day-1 decision 1).
+    """
+    stmt = (
+        select(TeamMembership, Team)
+        .join(Team, TeamMembership.team_id == Team.id)
+        .where(
+            TeamMembership.user_id == current_user.id,
+            Team.deleted_at.is_(None),
+        )
+        .order_by(TeamMembership.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+
+    team_info: TeamInResponse | None = None
+    if row is not None:
+        membership, team = row
+        team_info = TeamInResponse(id=team.id, name=team.name, role=membership.role)
+
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        team=team_info,
+    )

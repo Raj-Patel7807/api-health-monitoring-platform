@@ -56,6 +56,7 @@ celery_app.conf.task_default_queue = "maintenance"
 celery_app.conf.task_routes = {
     "app.workers.tasks.run_health_check": {"queue": "monitoring"},
     "app.workers.tasks.dispatch_notification": {"queue": "notifications"},
+    "app.workers.tasks.send_alert_task": {"queue": "notifications"},
     "app.workers.tasks.analyze_incident": {"queue": "ai"},
     "app.workers.tasks.schedule_due_monitors": {"queue": "maintenance"},
     "app.workers.tasks.ensure_next_month_partition": {"queue": "maintenance"},

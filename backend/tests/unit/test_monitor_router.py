@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.main import app
 from app.modules.monitors.dependencies import (
     TeamContext,
+    require_admin,
     require_monitor_read,
     require_monitor_write,
 )
@@ -291,7 +292,7 @@ async def test_update_monitor_endpoint_found_and_not_found(
 async def test_delete_monitor_endpoint_found_and_not_found(
     mock_team_context: TeamContext,
 ) -> None:
-    app.dependency_overrides[require_monitor_write] = lambda: mock_team_context
+    app.dependency_overrides[require_admin] = lambda: mock_team_context
     mock_db = AsyncMock()
     app.dependency_overrides[get_db] = lambda: mock_db
 

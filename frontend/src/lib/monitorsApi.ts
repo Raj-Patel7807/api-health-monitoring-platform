@@ -1,6 +1,8 @@
 import { clearTokens, getAccessToken } from "./auth";
 import { refreshAccessToken } from "./authApi";
 import type {
+    CheckResultListResponse,
+    CheckResultsParams,
     Monitor,
     MonitorField,
     MonitorListResponse,
@@ -249,4 +251,36 @@ export async function deleteMonitor(id: string): Promise<void> {
     return request<void>(`/monitors/${encodeURIComponent(id)}`, {
         method: "DELETE",
     });
+}
+
+/**
+ * Fetches paginated health-check results for a monitor.
+ * Supports optional time-range (`from`/`to` ISO 8601) and status filter.
+ * The API returns 422 if the requested range exceeds 31 days.
+ */
+export async function getMonitorResults(
+    monitorId: string,
+    params: CheckResultsParams = {},
+): Promise<CheckResultListResponse> {
+    const qs = new URLSearchParams();
+    qs.set("page", String(params.page ?? 1));
+    qs.set("page_size", String(params.page_size ?? 20));
+
+    const startTime = params.start_time ?? params.from;
+    const endTime = params.end_time ?? params.to;
+
+    if (startTime) {
+        qs.set("start_time", startTime);
+        qs.set("from", startTime);
+    }
+    if (endTime) {
+        qs.set("end_time", endTime);
+        qs.set("to", endTime);
+    }
+    if (params.status) qs.set("status", params.status);
+
+    return request<CheckResultListResponse>(
+        `/monitors/${encodeURIComponent(monitorId)}/results?${qs.toString()}`,
+        { method: "GET" },
+    );
 }

@@ -13,8 +13,10 @@ from app.db.models import Team, TeamMembership, TeamRole, User
 from app.modules.monitors.dependencies import (
     TeamContext,
     get_team_context,
+    require_admin,
     require_monitor_read,
     require_monitor_write,
+    require_role,
 )
 
 _SQLITE_URL = "sqlite+aiosqlite:///:memory:"
@@ -144,3 +146,21 @@ def test_require_monitor_roles() -> None:
         require_monitor_write(ro_ctx)
     assert exc_info.value.status_code == 403
     assert "read_only" in str(exc_info.value.detail)
+
+    # require_role varargs alias
+    custom_checker = require_role(TeamRole.admin, TeamRole.operator)
+    assert custom_checker(admin_ctx) == admin_ctx
+    assert custom_checker(op_ctx) == op_ctx
+    with pytest.raises(HTTPException) as exc_info:
+        custom_checker(ro_ctx)
+    assert exc_info.value.status_code == 403
+
+    # Admin-only: only admin passes; operator and read_only get 403
+    assert require_admin(admin_ctx) == admin_ctx
+    with pytest.raises(HTTPException) as exc_info:
+        require_admin(op_ctx)
+    assert exc_info.value.status_code == 403
+    assert "operator" in str(exc_info.value.detail)
+    with pytest.raises(HTTPException) as exc_info:
+        require_admin(ro_ctx)
+    assert exc_info.value.status_code == 403
