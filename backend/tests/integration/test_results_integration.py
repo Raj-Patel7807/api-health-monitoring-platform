@@ -1,4 +1,3 @@
-
 """Integration tests for the monitor results API (US-08)."""
 
 from collections.abc import AsyncGenerator, Generator
