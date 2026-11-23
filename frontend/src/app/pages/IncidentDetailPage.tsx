@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
     CHANNEL_TYPE_ICONS,
@@ -17,6 +17,10 @@ import {
     getIncidentDeliveries,
     ApiError,
 } from "../../lib/incidentsApi";
+import {
+    fetchIncidentAIAnalysis,
+    triggerIncidentAIAnalysis,
+} from "../../lib/aiApi";
 import "./monitors.css";
 import "./MonitorDetailPage.css";
 import "./incidents.css";
@@ -24,6 +28,7 @@ import "./incidents.css";
 export function IncidentDetailPage() {
     const { incidentId } = useParams<{ incidentId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // Query incident details
     const {
@@ -70,6 +75,25 @@ export function IncidentDetailPage() {
     const deliveries: AlertDelivery[] = deliveriesData?.items ?? [];
     const hasPendingDelivery = deliveries.some((d) => d.status === "pending");
     const isActivelyPolling = isIncidentOpen || hasPendingDelivery;
+
+    // Query AI Analysis
+    const {
+        data: aiAnalysis,
+        isLoading: aiLoading,
+        isError: isAiError,
+        refetch: refetchAI,
+    } = useQuery({
+        queryKey: ["incident-ai", incidentId],
+        queryFn: () => fetchIncidentAIAnalysis(incidentId!),
+        enabled: Boolean(incidentId),
+    });
+
+    const triggerAIMutation = useMutation({
+        mutationFn: () => triggerIncidentAIAnalysis(incidentId!),
+        onSuccess: (data) => {
+            queryClient.setQueryData(["incident-ai", incidentId], data);
+        },
+    });
 
     // Handle 401 unauthenticated
     useEffect(() => {
@@ -268,6 +292,252 @@ export function IncidentDetailPage() {
                         </dd>
                     </div>
                 </dl>
+
+                {/* ── AI Incident Assistance Panel ────────────────────────── */}
+                <section
+                    className="deliveries-section"
+                    style={{ marginBottom: "2rem" }}
+                    aria-labelledby="ai-analysis-heading"
+                    data-testid="ai-analysis-section"
+                >
+                    <div
+                        className="deliveries-section-header"
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        <div>
+                            <h2
+                                id="ai-analysis-heading"
+                                className="deliveries-section-title"
+                            >
+                                🤖 AI Incident Diagnosis
+                            </h2>
+                            <p
+                                style={{
+                                    fontSize: "0.85rem",
+                                    color: "var(--clr-text-secondary)",
+                                    margin: 0,
+                                }}
+                            >
+                                Automated advisory root cause analysis and
+                                recommended remediation steps.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="monitors-button monitors-button--secondary"
+                            onClick={() => triggerAIMutation.mutate()}
+                            disabled={triggerAIMutation.isPending || aiLoading}
+                            data-testid="regenerate-ai-btn"
+                        >
+                            {triggerAIMutation.isPending
+                                ? "Analyzing..."
+                                : "Re-run Analysis"}
+                        </button>
+                    </div>
+
+                    {aiLoading && (
+                        <div role="status" className="monitors-state-box">
+                            <span className="spinner" aria-hidden="true" />
+                            <p>Generating incident diagnosis...</p>
+                        </div>
+                    )}
+
+                    {isAiError && (
+                        <div role="alert" className="monitors-state-box">
+                            <p>
+                                AI diagnosis is temporarily unavailable for this
+                                incident.
+                            </p>
+                            <button
+                                type="button"
+                                className="monitors-button monitors-button--secondary"
+                                onClick={() => void refetchAI()}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {!aiLoading && !isAiError && aiAnalysis && (
+                        <div
+                            className="ai-analysis-card"
+                            style={{
+                                background: "rgba(255, 255, 255, 0.02)",
+                                border: "1px solid var(--clr-border)",
+                                borderRadius: "var(--radius-md)",
+                                padding: "1.25rem",
+                                marginTop: "1rem",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    gap: "0.5rem",
+                                    alignItems: "center",
+                                    marginBottom: "0.75rem",
+                                }}
+                            >
+                                <span className="monitors-chip monitors-chip--method">
+                                    Model: {aiAnalysis.model}
+                                </span>
+                                <span
+                                    className="monitors-chip"
+                                    style={{
+                                        background: "rgba(59, 130, 246, 0.15)",
+                                        color: "#60a5fa",
+                                    }}
+                                >
+                                    Status: {aiAnalysis.status}
+                                </span>
+                            </div>
+
+                            <div style={{ marginBottom: "1rem" }}>
+                                <strong
+                                    style={{
+                                        display: "block",
+                                        color: "var(--clr-text-primary)",
+                                        marginBottom: "0.25rem",
+                                    }}
+                                >
+                                    Summary
+                                </strong>
+                                <p
+                                    style={{
+                                        margin: 0,
+                                        color: "var(--clr-text-secondary)",
+                                    }}
+                                >
+                                    {aiAnalysis.summary}
+                                </p>
+                            </div>
+
+                            {aiAnalysis.root_cause && (
+                                <div style={{ marginBottom: "1rem" }}>
+                                    <strong
+                                        style={{
+                                            display: "block",
+                                            color: "var(--clr-text-primary)",
+                                            marginBottom: "0.25rem",
+                                        }}
+                                    >
+                                        Probable Root Cause
+                                    </strong>
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            color: "var(--clr-text-secondary)",
+                                        }}
+                                    >
+                                        {aiAnalysis.root_cause}
+                                    </p>
+                                </div>
+                            )}
+
+                            {aiAnalysis.suggested_actions &&
+                                aiAnalysis.suggested_actions.length > 0 && (
+                                    <div style={{ marginBottom: "1rem" }}>
+                                        <strong
+                                            style={{
+                                                display: "block",
+                                                color: "var(--clr-text-primary)",
+                                                marginBottom: "0.25rem",
+                                            }}
+                                        >
+                                            Suggested Remediation
+                                        </strong>
+                                        <ul
+                                            style={{
+                                                margin: 0,
+                                                paddingLeft: "1.25rem",
+                                                color: "var(--clr-text-secondary)",
+                                            }}
+                                        >
+                                            {aiAnalysis.suggested_actions.map(
+                                                (act, i) => (
+                                                    <li key={i}>{act}</li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    </div>
+                                )}
+
+                            {aiAnalysis.investigation_steps &&
+                                aiAnalysis.investigation_steps.length > 0 && (
+                                    <div style={{ marginBottom: "1rem" }}>
+                                        <strong
+                                            style={{
+                                                display: "block",
+                                                color: "var(--clr-text-primary)",
+                                                marginBottom: "0.25rem",
+                                            }}
+                                        >
+                                            Investigation Steps
+                                        </strong>
+                                        <ul
+                                            style={{
+                                                margin: 0,
+                                                paddingLeft: "1.25rem",
+                                                color: "var(--clr-text-secondary)",
+                                            }}
+                                        >
+                                            {aiAnalysis.investigation_steps.map(
+                                                (step, i) => (
+                                                    <li key={i}>{step}</li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    </div>
+                                )}
+
+                            {aiAnalysis.prevention_steps &&
+                                aiAnalysis.prevention_steps.length > 0 && (
+                                    <div>
+                                        <strong
+                                            style={{
+                                                display: "block",
+                                                color: "var(--clr-text-primary)",
+                                                marginBottom: "0.25rem",
+                                            }}
+                                        >
+                                            Prevention Steps
+                                        </strong>
+                                        <ul
+                                            style={{
+                                                margin: 0,
+                                                paddingLeft: "1.25rem",
+                                                color: "var(--clr-text-secondary)",
+                                            }}
+                                        >
+                                            {aiAnalysis.prevention_steps.map(
+                                                (prev, i) => (
+                                                    <li key={i}>{prev}</li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    </div>
+                                )}
+
+                            <p
+                                style={{
+                                    marginTop: "1rem",
+                                    fontSize: "0.75rem",
+                                    color: "var(--clr-text-muted, #94a3b8)",
+                                    borderTop: "1px solid var(--clr-border)",
+                                    paddingTop: "0.5rem",
+                                    fontStyle: "italic",
+                                }}
+                            >
+                                Note: AI assistance is advisory. Monitoring
+                                data, response codes, and incident status above
+                                are strictly deterministic.
+                            </p>
+                        </div>
+                    )}
+                </section>
 
                 {/* ── Alert Deliveries Panel ──────────────────────────────── */}
                 <section

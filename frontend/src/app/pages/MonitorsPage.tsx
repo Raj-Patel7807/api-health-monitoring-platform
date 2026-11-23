@@ -8,6 +8,11 @@ import {
 } from "@tanstack/react-query";
 
 import { listMonitors, deleteMonitor, ApiError } from "../../lib/monitorsApi";
+import {
+    previewApiDocs,
+    commitImportedMonitors,
+    type CandidateMonitor,
+} from "../../lib/importerApi";
 import type { Monitor } from "../../lib/monitors";
 import { useCurrentRole } from "../hooks/useCurrentRole";
 import { AppNav } from "../components/AppNav";
@@ -46,6 +51,123 @@ export function MonitorsPage() {
     });
 
     const { isReadOnly, isAdmin } = useCurrentRole();
+
+    // Importer state
+    const [showImporter, setShowImporter] = useState(false);
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importBaseUrl, setImportBaseUrl] = useState("");
+    const [candidates, setCandidates] = useState<CandidateMonitor[]>([]);
+    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+        new Set(),
+    );
+    const [isScanning, setIsScanning] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    const [importerError, setImporterError] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setImportFile(e.target.files[0]);
+            setImporterError(null);
+        }
+    };
+
+    const handleScanDocs = async () => {
+        if (!importFile) {
+            setImporterError("Please select an API documentation file.");
+            return;
+        }
+        setIsScanning(true);
+        setImporterError(null);
+        try {
+            const preview = await previewApiDocs(
+                importFile,
+                importBaseUrl || undefined,
+            );
+            setCandidates(preview.items);
+            // Default select valid candidates
+            const validIdxs = new Set<number>();
+            preview.items.forEach((item, idx) => {
+                if (item.is_valid) validIdxs.add(idx);
+            });
+            setSelectedIndices(validIdxs);
+            if (preview.items.length === 0) {
+                addToast(
+                    "No endpoints were detected in the uploaded file.",
+                    "error",
+                );
+            } else {
+                addToast(
+                    `Found ${preview.items.length} endpoint(s).`,
+                    "success",
+                );
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Scanning failed.";
+            setImporterError(msg);
+            addToast(msg, "error");
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const handleCandidateToggle = (idx: number) => {
+        setSelectedIndices((prev) => {
+            const next = new Set(prev);
+            if (next.has(idx)) {
+                next.delete(idx);
+            } else {
+                next.add(idx);
+            }
+            return next;
+        });
+    };
+
+    const handleCandidateFieldChange = (
+        idx: number,
+        field: keyof CandidateMonitor,
+        val: string | number | boolean | null | undefined,
+    ) => {
+        setCandidates((prev) => {
+            const next = [...prev];
+            next[idx] = { ...next[idx], [field]: val };
+            return next;
+        });
+    };
+
+    const handleCommitImport = async () => {
+        const itemsToImport = candidates.filter((_, idx) =>
+            selectedIndices.has(idx),
+        );
+        if (itemsToImport.length === 0) {
+            setImporterError("No endpoints selected for import.");
+            return;
+        }
+        setIsImporting(true);
+        setImporterError(null);
+        try {
+            const res = await commitImportedMonitors(
+                itemsToImport,
+                importBaseUrl || undefined,
+            );
+            addToast(
+                `Successfully imported ${res.imported_count} monitor(s)!`,
+                "success",
+            );
+            await queryClient.invalidateQueries({ queryKey: ["monitors"] });
+            await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+            // Reset importer
+            setShowImporter(false);
+            setImportFile(null);
+            setCandidates([]);
+            setSelectedIndices(new Set());
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Import failed.";
+            setImporterError(msg);
+            addToast(msg, "error");
+        } finally {
+            setIsImporting(false);
+        }
+    };
 
     // Derived after data is declared
     const pendingDeleteMonitor =
@@ -96,15 +218,263 @@ export function MonitorsPage() {
                         </p>
                     </div>
                     {!isReadOnly && (
-                        <Link
-                            to="/monitors/new"
-                            className="monitors-button monitors-button--primary"
-                            data-testid="add-monitor-btn"
-                        >
-                            Add monitor
-                        </Link>
+                        <div style={{ display: "flex", gap: "0.75rem" }}>
+                            <button
+                                type="button"
+                                className="monitors-button monitors-button--secondary"
+                                onClick={() => setShowImporter(!showImporter)}
+                                data-testid="toggle-importer-btn"
+                            >
+                                {showImporter
+                                    ? "Close Import"
+                                    : "📁 Import from Docs"}
+                            </button>
+                            <Link
+                                to="/monitors/new"
+                                className="monitors-button monitors-button--primary"
+                                data-testid="add-monitor-btn"
+                            >
+                                Add monitor
+                            </Link>
+                        </div>
                     )}
                 </header>
+
+                {showImporter && (
+                    <section
+                        className="importer-panel"
+                        data-testid="importer-panel"
+                    >
+                        <h2>Import Monitors from API Documentation</h2>
+                        <p
+                            className="monitors-subtitle"
+                            style={{ marginBottom: "1rem" }}
+                        >
+                            Upload an api.md file or OpenAPI specification to
+                            automatically discover and create monitors.
+                        </p>
+
+                        <div className="importer-dropzone">
+                            <input
+                                type="file"
+                                accept=".md,.markdown,.json,.yaml,.yml,.txt"
+                                onChange={handleFileChange}
+                                className="importer-dropzone-input"
+                                data-testid="importer-file-input"
+                            />
+                            {importFile && (
+                                <p
+                                    style={{
+                                        marginTop: "0.5rem",
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Selected file: {importFile.name} (
+                                    {(importFile.size / 1024).toFixed(1)} KB)
+                                </p>
+                            )}
+                        </div>
+
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "1rem",
+                                alignItems: "flex-end",
+                                marginBottom: "1rem",
+                            }}
+                        >
+                            <div style={{ flex: 1 }}>
+                                <label
+                                    style={{
+                                        display: "block",
+                                        fontSize: "0.85rem",
+                                        marginBottom: "0.25rem",
+                                    }}
+                                >
+                                    Base URL (Prepended to relative paths, e.g.
+                                    https://api.example.com):
+                                </label>
+                                <input
+                                    type="url"
+                                    className="importer-preview-input"
+                                    placeholder="https://api.example.com"
+                                    value={importBaseUrl}
+                                    onChange={(e) =>
+                                        setImportBaseUrl(e.target.value)
+                                    }
+                                    data-testid="importer-base-url-input"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                className="monitors-button monitors-button--secondary"
+                                onClick={handleScanDocs}
+                                disabled={!importFile || isScanning}
+                                data-testid="scan-docs-btn"
+                            >
+                                {isScanning ? "Scanning..." : "Scan Document"}
+                            </button>
+                        </div>
+
+                        {importerError && (
+                            <div
+                                role="alert"
+                                style={{
+                                    color: "#f87171",
+                                    marginBottom: "1rem",
+                                }}
+                            >
+                                {importerError}
+                            </div>
+                        )}
+
+                        {candidates.length > 0 && (
+                            <div style={{ marginTop: "1rem" }}>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <h3>
+                                        Discovered Endpoints (
+                                        {candidates.length})
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        className="monitors-button monitors-button--primary"
+                                        onClick={handleCommitImport}
+                                        disabled={
+                                            isImporting ||
+                                            selectedIndices.size === 0
+                                        }
+                                        data-testid="commit-import-btn"
+                                    >
+                                        {isImporting
+                                            ? "Importing..."
+                                            : `Import Selected (${selectedIndices.size})`}
+                                    </button>
+                                </div>
+
+                                <div style={{ overflowX: "auto" }}>
+                                    <table className="importer-preview-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: "40px" }}>
+                                                    Select
+                                                </th>
+                                                <th>Name</th>
+                                                <th>Method</th>
+                                                <th>URL / Path</th>
+                                                <th style={{ width: "80px" }}>
+                                                    Status
+                                                </th>
+                                                <th>Validation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {candidates.map((cand, idx) => (
+                                                <tr key={idx}>
+                                                    <td>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIndices.has(
+                                                                idx,
+                                                            )}
+                                                            onChange={() =>
+                                                                handleCandidateToggle(
+                                                                    idx,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                !cand.is_valid &&
+                                                                !importBaseUrl
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            className="importer-preview-input"
+                                                            value={cand.name}
+                                                            onChange={(e) =>
+                                                                handleCandidateFieldChange(
+                                                                    idx,
+                                                                    "name",
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <span className="monitors-chip monitors-chip--method">
+                                                            {cand.method}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            className="importer-preview-input"
+                                                            value={cand.url}
+                                                            onChange={(e) =>
+                                                                handleCandidateFieldChange(
+                                                                    idx,
+                                                                    "url",
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            className="importer-preview-input"
+                                                            value={
+                                                                cand.expected_status_code
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleCandidateFieldChange(
+                                                                    idx,
+                                                                    "expected_status_code",
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                        10,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        {cand.is_valid ? (
+                                                            <span className="importer-badge-valid">
+                                                                Valid
+                                                            </span>
+                                                        ) : (
+                                                            <span
+                                                                className="importer-badge-invalid"
+                                                                title={
+                                                                    cand.validation_error ||
+                                                                    ""
+                                                                }
+                                                            >
+                                                                {cand.validation_error ||
+                                                                    "Invalid"}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 <section className="monitors-card">
                     {isLoading && (
