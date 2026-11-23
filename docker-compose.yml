@@ -29,10 +29,17 @@ services:
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: http://localhost:5173
       LLM_ENABLED: "false"
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run python scripts/init_env.py or set ENCRYPTION_KEY}
+      # Security: generate with: python -c "import secrets; print(secrets.token_hex(32))"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Run python scripts/init_env.py or set JWT_SECRET_KEY}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health', timeout=2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     ports: ["8000:8000"]
 
   worker:
@@ -42,9 +49,15 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/api_health
       REDIS_URL: redis://redis:6379/0
       LLM_ENABLED: "false"
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run python scripts/init_env.py or set ENCRYPTION_KEY}
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@example.com}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
     depends_on:
-      postgres: { condition: service_healthy }
+      backend: { condition: service_healthy }
       redis: { condition: service_healthy }
 
   beat:
@@ -54,6 +67,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       LLM_ENABLED: "false"
     depends_on:
+      backend: { condition: service_healthy }
       redis: { condition: service_healthy }
 
   frontend:

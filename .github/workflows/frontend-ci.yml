@@ -37,5 +37,12 @@ jobs:
               run: npm run typecheck
             - name: Component tests
               run: npm run test
-            - name: Build
-              run: npm run build
+            - name: Build with the Vercel same-origin API setting
+              env:
+                  VITE_API_BASE_URL: ""
+              run: |
+                  npm run build
+                  if grep -Fq 'http://localhost:8000' dist/assets/*.js; then
+                      echo 'The deployment bundle references the local API.'
+                      exit 1
+                  fi
