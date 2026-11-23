@@ -1,3 +1,4 @@
+import { mockAdminProfile } from "../../test/mockAdminProfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,10 +24,12 @@ function renderApp(initialEntry = "/monitors/new") {
 
 describe("MonitorFormPage", () => {
     beforeEach(() => {
+        mockAdminProfile();
         localStorage.setItem("access_token", "test-token");
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
     });
@@ -37,6 +40,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             expect(
                 screen.getByRole("heading", { name: "Add monitor" }),
@@ -70,7 +74,7 @@ describe("MonitorFormPage", () => {
                                     url: "https://api.example.com/health",
                                     method: "GET",
                                     enabled: true,
-                                    check_interval_seconds: 60,
+                                    check_interval_seconds: 30,
                                     timeout_seconds: 10,
                                     expected_status_code: 200,
                                     failure_threshold: 3,
@@ -105,6 +109,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Payment API" },
@@ -137,7 +142,7 @@ describe("MonitorFormPage", () => {
                 name: "Payment API",
                 url: "https://api.example.com/health",
                 method: "GET",
-                check_interval_seconds: 60,
+                check_interval_seconds: 30,
                 timeout_seconds: 10,
                 expected_status_code: 200,
                 failure_threshold: 3,
@@ -179,6 +184,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Delayed API" },
@@ -240,6 +246,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Test API" },
@@ -284,6 +291,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Quota API" },
@@ -318,6 +326,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Forbidden API" },
@@ -343,6 +352,7 @@ describe("MonitorFormPage", () => {
             vi.stubGlobal("fetch", mockFetch);
 
             renderApp("/monitors/new");
+            await screen.findByRole("heading", { name: "Add monitor" });
 
             fireEvent.change(screen.getByLabelText("Name"), {
                 target: { value: "Offline API" },

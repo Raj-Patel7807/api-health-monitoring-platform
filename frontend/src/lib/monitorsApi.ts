@@ -1,5 +1,4 @@
-import { clearTokens, getAccessToken } from "./auth";
-import { refreshAccessToken } from "./authApi";
+import { authenticatedFetch } from "./authenticatedFetch";
 import type {
     CheckResultListResponse,
     CheckResultsParams,
@@ -129,68 +128,19 @@ async function buildApiError(response: Response): Promise<ApiError> {
     return parseErrorResponse(response.status, data);
 }
 
-async function sendRequest(
-    url: string,
-    init?: RequestInit,
-    token?: string | null,
-): Promise<Response> {
-    const headers = new Headers(init?.headers);
-    if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-    }
-    if (init?.body && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-    }
-
-    return fetch(url, {
-        ...init,
-        headers,
-    });
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const apiBase =
         (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
         "http://localhost:8000";
     const url = `${apiBase}/api/v1${path}`;
-    const token = getAccessToken();
-
     let response: Response;
     try {
-        response = await sendRequest(url, init, token);
+        response = await authenticatedFetch(url, init);
     } catch {
         throw new ApiError(
             "Could not reach the server. Check your connection and try again.",
             0,
-            null,
-            {},
         );
-    }
-
-    if (response.status === 401) {
-        let refreshed = false;
-        try {
-            refreshed = await refreshAccessToken();
-        } catch {
-            refreshed = false;
-        }
-
-        if (refreshed) {
-            const newToken = getAccessToken();
-            try {
-                response = await sendRequest(url, init, newToken);
-            } catch {
-                throw new ApiError(
-                    "Could not reach the server. Check your connection and try again.",
-                    0,
-                    null,
-                    {},
-                );
-            }
-        } else {
-            clearTokens();
-            throw await buildApiError(response);
-        }
     }
 
     if (!response.ok) {

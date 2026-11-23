@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { clearTokens } from "../../lib/auth";
 import { useCurrentRole } from "../hooks/useCurrentRole";
 
 export function AppNav() {
@@ -33,15 +34,17 @@ export function AppNav() {
                 <span aria-hidden="true">🚨</span>
                 <span>Incidents</span>
             </NavLink>
-            <NavLink
-                to="/channels"
-                className={({ isActive }) =>
-                    `app-nav-link${isActive ? " app-nav-link--active" : ""}`
-                }
-            >
-                <span aria-hidden="true">🔔</span>
-                <span>Channels</span>
-            </NavLink>
+            {!isReadOnly && (
+                <NavLink
+                    to="/channels"
+                    className={({ isActive }) =>
+                        `app-nav-link${isActive ? " app-nav-link--active" : ""}`
+                    }
+                >
+                    <span aria-hidden="true">🔔</span>
+                    <span>Channels</span>
+                </NavLink>
+            )}
             {!isReadOnly && (
                 <NavLink
                     to="/members"
@@ -54,6 +57,13 @@ export function AppNav() {
                     <span>Members</span>
                 </NavLink>
             )}
+            <button
+                type="button"
+                className="app-nav-link app-nav-logout"
+                onClick={clearTokens}
+            >
+                Log out
+            </button>
         </nav>
     );
 }

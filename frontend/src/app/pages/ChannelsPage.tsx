@@ -4,8 +4,7 @@
  * Shows: type, name, scope (team-wide or monitor name), enabled toggle,
  * delete button (with confirmation dialog), and an "Add channel" link.
  *
- * Role-aware: controls (Add / Delete) are hidden for read_only users via
- * useCurrentRole(). The hook is stubbed until /auth/me returns the role.
+ * The route requires an admin or operator team membership.
  */
 
 import { useState, useEffect } from "react";

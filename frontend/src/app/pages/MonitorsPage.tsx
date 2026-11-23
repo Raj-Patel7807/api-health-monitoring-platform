@@ -45,7 +45,7 @@ export function MonitorsPage() {
         placeholderData: keepPreviousData,
     });
 
-    const { isReadOnly } = useCurrentRole();
+    const { isReadOnly, isAdmin } = useCurrentRole();
 
     // Derived after data is declared
     const pendingDeleteMonitor =
@@ -234,19 +234,21 @@ export function MonitorsPage() {
                                                             >
                                                                 Edit
                                                             </Link>
-                                                            <button
-                                                                type="button"
-                                                                className="monitors-delete-btn"
-                                                                aria-label={`Delete ${monitor.name}`}
-                                                                onClick={() =>
-                                                                    setPendingDeleteId(
-                                                                        monitor.id,
-                                                                    )
-                                                                }
-                                                                data-testid={`delete-${monitor.id}`}
-                                                            >
-                                                                Delete
-                                                            </button>
+                                                            {isAdmin && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="monitors-delete-btn"
+                                                                    aria-label={`Delete ${monitor.name}`}
+                                                                    onClick={() =>
+                                                                        setPendingDeleteId(
+                                                                            monitor.id,
+                                                                        )
+                                                                    }
+                                                                    data-testid={`delete-${monitor.id}`}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 )}
