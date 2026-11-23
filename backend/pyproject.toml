@@ -78,7 +78,7 @@ asyncio_mode = "auto"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*", "celery*"]
+include = ["app*"]
 exclude = ["tests*"]
 
 [dependency-groups]

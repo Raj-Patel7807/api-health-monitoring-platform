@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import TeamMembership, TeamRole, User
+from app.db.models import Team, TeamMembership, TeamRole, User
 from app.modules.team.schemas import TeamMemberResponse
 
 
@@ -101,13 +101,15 @@ async def update_team_member_role(
         HTTPException 404: If the target user is not a member of this team.
         HTTPException 409: If demoting the user would leave the team with 0 admins.
     """
+    # Serialize role changes across different memberships of this team.
+    await db.execute(select(Team.id).where(Team.id == team_id).with_for_update())
     stmt = (
         select(TeamMembership)
         .where(
             TeamMembership.team_id == team_id,
             TeamMembership.user_id == user_id,
         )
-        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     membership = (await db.execute(stmt)).scalar_one_or_none()
 

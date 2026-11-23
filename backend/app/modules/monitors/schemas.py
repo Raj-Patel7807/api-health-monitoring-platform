@@ -37,7 +37,7 @@ class MonitorBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=150)
     url: str = Field(..., max_length=2048)
     method: HttpMethod = HttpMethod.GET
-    check_interval_seconds: int = Field(default=60, gt=0, le=86400)
+    check_interval_seconds: int = Field(default=30, gt=0, le=86400)
     timeout_seconds: int = Field(default=10, gt=0, le=300)
     expected_status_code: int = Field(default=200, ge=100, le=599)
     failure_threshold: int = Field(default=3, gt=0, le=100)
@@ -169,6 +169,7 @@ class MonitorResponse(BaseModel):
 
 
 class MonitorDetailResponse(MonitorResponse):
+    health_status: str = "unknown"
     current_interval_seconds: int
     consecutive_failures: int
     consecutive_successes: int

@@ -205,3 +205,15 @@ class TestChannelUpdateRequest:
         req = ChannelUpdateRequest(name="New Name")
         assert req.name == "New Name"
         assert req.is_enabled is None
+
+
+@pytest.mark.parametrize(
+    "address", ["https://[", "https://example.com:bad/path", "https://username:secret@example.com"]
+)
+def test_malformed_webhook_address_is_a_validation_error(address):
+    from pydantic import ValidationError
+
+    from app.modules.channels.schemas import ChannelCreateRequest
+
+    with pytest.raises(ValidationError):
+        ChannelCreateRequest(type="webhook", name="Test", secret_value=address)

@@ -33,8 +33,8 @@ class Monitor(Base):
         nullable=False,
     )
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    check_interval_seconds: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
-    current_interval_seconds: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
+    check_interval_seconds: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    current_interval_seconds: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
     timeout_seconds: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     failure_threshold: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     recovery_threshold: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
@@ -45,6 +45,7 @@ class Monitor(Base):
     user_agent: Mapped[str | None] = mapped_column(
         String(255), default="APIMonitor/1.0", nullable=True
     )
+    pending_check_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     next_check_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

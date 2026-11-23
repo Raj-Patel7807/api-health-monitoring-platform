@@ -1,4 +1,4 @@
-"""Alert senders for US-11 (B5): common interface, Slack, Discord.
+"""Alert senders for US-11 (B5): Slack, Discord, SMTP and generic HTTPS webhooks.
 
 Security rules (enforced here):
 - The secret is decrypted ONLY inside the send function (never before, never stored).
@@ -145,11 +145,30 @@ class DiscordSender(AlertSender):
             webhook_url = ""  # noqa: F841  # type: ignore[assignment]
 
 
+class EmailSender(AlertSender):
+    def send(self, channel: object, message: AlertMessage) -> None:
+        from app.core.crypto import decrypt
+        from app.services.email_sender import send_email
+
+        recipient = decrypt(channel.secret_ref)  # type: ignore[attr-defined]
+        subject = f"[{message.event_type.upper()}] {message.monitor_name}"
+        send_email(recipient, " ".join(subject.splitlines()), _format_message(**vars(message)))
+
+
+class WebhookSender(AlertSender):
+    def send(self, channel: object, message: AlertMessage) -> None:
+        from app.core.crypto import decrypt
+        from app.services.webhook_sender import send_webhook
+
+        url = decrypt(channel.secret_ref)  # type: ignore[attr-defined]
+        send_webhook(url, {**vars(message), "checked_at": message.checked_at.isoformat()})
+
+
 def get_sender(channel_type: str) -> AlertSender:
     """Factory: return the appropriate AlertSender for the given channel type.
 
     Args:
-        channel_type: One of "slack", "discord".
+        channel_type: A configured notification channel type.
 
     Raises:
         ValueError: For unsupported channel types.
@@ -157,6 +176,8 @@ def get_sender(channel_type: str) -> AlertSender:
     _registry: dict[str, AlertSender] = {
         "slack": SlackSender(),
         "discord": DiscordSender(),
+        "webhook": WebhookSender(),
+        "email": EmailSender(),
     }
     sender = _registry.get(channel_type)
     if sender is None:

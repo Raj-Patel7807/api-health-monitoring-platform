@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
@@ -30,8 +31,8 @@ __all__ = [
 
 
 def create_database_engine() -> Engine:
-    """Create the synchronous SQLAlchemy engine used by migrations."""
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    """Release database connections when a synchronous task returns them."""
+    return create_engine(get_settings().database_url, poolclass=NullPool)
 
 
 def _async_url(url: str) -> str:

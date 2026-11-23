@@ -21,7 +21,7 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -65,7 +65,7 @@ class CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def _is_public_target(url: str) -> bool:
+def is_public_target(url: str) -> bool:
     """Reject private, local, and unresolvable destinations before making HTTP requests.
 
     DNS must be checked for hostname targets, not just literal IP addresses.
@@ -112,10 +112,10 @@ def execute_http_check(
     Measures elapsed time with a monotonic clock for accuracy.
     """
     result = CheckResult(monitor_id=monitor_id, status="healthy")
-    headers = {"User-Agent": user_agent}
+    headers = {"User-Agent": user_agent, "Accept-Encoding": "identity"}
 
     start = time.perf_counter()
-    if not _is_public_target(url):
+    if not is_public_target(url):
         result.status = "failing"
         result.connection_error = True
         result.response_time_ms = int((time.perf_counter() - start) * 1000)
@@ -125,12 +125,20 @@ def execute_http_check(
 
     try:
         with httpx.Client(timeout=timeout_seconds, verify=True, trust_env=False) as client:
-            response = client.request(method, url, headers=headers)
+            with client.stream(method, url, headers=headers) as response:
+                result.http_status_code = response.status_code
+                if (
+                    response.status_code != expected_status_code
+                    and response.headers.get("Content-Encoding", "identity").lower() == "identity"
+                ):
+                    # Raw chunks avoid decompressing an unbounded body in memory.
+                    prefix = next(response.iter_raw(chunk_size=2000), b"")
+                    result.body_excerpt = prefix.decode(
+                        response.encoding or "utf-8", errors="replace"
+                    )[:500]
 
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result.response_time_ms = elapsed_ms
-        result.http_status_code = response.status_code
-        result.body_excerpt = response.text[:500]
 
         # AC-06.2 — wrong status code
         if response.status_code != expected_status_code:
@@ -206,6 +214,7 @@ def update_monitor_counters(monitor: Monitor, result: CheckResult) -> None:
 def check_monitor_by_id(
     monitor_id: str,
     db_session: Session | None = None,
+    check_id: str | None = None,
 ) -> CheckResult | None:
     """Load a monitor, run its health check, update counters, and return the result."""
 
@@ -216,7 +225,24 @@ def check_monitor_by_id(
             logger.error("Invalid monitor id %r — skipping check", monitor_id)
             return None
 
-        monitor = session.get(Monitor, monitor_uuid)
+        if check_id is None:
+            monitor = session.get(Monitor, monitor_uuid)
+        else:
+            # The row lock spans the probe and its result transaction. Redeliveries
+            # see the cleared token only after the first result is durable.
+            monitor = session.scalar(
+                select(Monitor)
+                .where(Monitor.id == monitor_uuid)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if (
+                monitor is None
+                or monitor.pending_check_id is None
+                or str(monitor.pending_check_id) != check_id
+            ):
+                return None
+            monitor.pending_check_id = None
 
         if monitor is None:
             logger.error("Monitor %s not found — skipping check", monitor_id)

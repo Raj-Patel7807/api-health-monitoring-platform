@@ -99,7 +99,7 @@ def test_full_fail_open_recover_resolve_cycle(db_session: Session) -> None:
         client_instance = mock_client_cls.return_value.__enter__.return_value
 
         # --- STEP 1: Two initial failures (threshold is 3, no incident yet) ---
-        client_instance.request.return_value = _fake_http_response(500)
+        client_instance.stream.return_value.__enter__.return_value = _fake_http_response(500)
         check_monitor_by_id(str(monitor.id), db_session=db_session)
         check_monitor_by_id(str(monitor.id), db_session=db_session)
 
@@ -121,7 +121,7 @@ def test_full_fail_open_recover_resolve_cycle(db_session: Session) -> None:
         assert derive_incident_state(first_incident, monitor) == "failing"
 
         # --- STEP 3: First recovery check (200 OK) -> RECOVERING (1/2) ---
-        client_instance.request.return_value = _fake_http_response(200)
+        client_instance.stream.return_value.__enter__.return_value = _fake_http_response(200)
         check_monitor_by_id(str(monitor.id), db_session=db_session)
 
         db_session.refresh(first_incident)
@@ -132,7 +132,7 @@ def test_full_fail_open_recover_resolve_cycle(db_session: Session) -> None:
         mock_resolved_hook.assert_not_called()
 
         # --- STEP 4: Failure during recovery -> RESETS RECOVERY PROGRESS ---
-        client_instance.request.return_value = _fake_http_response(503)
+        client_instance.stream.return_value.__enter__.return_value = _fake_http_response(503)
         check_monitor_by_id(str(monitor.id), db_session=db_session)
 
         db_session.refresh(first_incident)
@@ -143,7 +143,7 @@ def test_full_fail_open_recover_resolve_cycle(db_session: Session) -> None:
         assert derive_incident_state(first_incident, monitor) == "failing"
 
         # --- STEP 5: First success of second recovery streak -> RECOVERING (1/2) ---
-        client_instance.request.return_value = _fake_http_response(200)
+        client_instance.stream.return_value.__enter__.return_value = _fake_http_response(200)
         check_monitor_by_id(str(monitor.id), db_session=db_session)
 
         db_session.refresh(first_incident)
@@ -168,7 +168,7 @@ def test_full_fail_open_recover_resolve_cycle(db_session: Session) -> None:
         mock_resolved_hook.assert_called_once_with(first_incident.id)
 
         # --- STEP 7: New failure streak opens a new incident row ---
-        client_instance.request.return_value = _fake_http_response(500)
+        client_instance.stream.return_value.__enter__.return_value = _fake_http_response(500)
         check_monitor_by_id(str(monitor.id), db_session=db_session)  # fail 1
         check_monitor_by_id(str(monitor.id), db_session=db_session)  # fail 2
         check_monitor_by_id(str(monitor.id), db_session=db_session)  # fail 3 (threshold)

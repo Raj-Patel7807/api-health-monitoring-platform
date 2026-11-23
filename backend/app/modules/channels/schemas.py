@@ -102,13 +102,23 @@ def _validate_secret(channel_type: ChannelType, secret: str) -> str:
             )
 
     elif channel_type == ChannelType.webhook:
-        parsed = urlparse(s)
+        try:
+            parsed = urlparse(s)
+            _ = parsed.port  # Validate explicit port syntax and range.
+        except ValueError:
+            raise PydanticCustomError(
+                "value_error", "Webhook URL must have a valid host and port."
+            ) from None
+        if parsed.username is not None or parsed.password is not None:
+            raise PydanticCustomError(
+                "value_error", "Webhook URL must not contain user credentials."
+            )
         if parsed.scheme != "https":
             raise PydanticCustomError(
                 "value_error",
                 "Webhook URL must use https://",
             )
-        if not parsed.netloc:
+        if not parsed.hostname:
             raise PydanticCustomError("value_error", "Webhook URL must have a valid host.")
         host = parsed.hostname or ""
         if _is_private_host(host):
