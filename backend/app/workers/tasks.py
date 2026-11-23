@@ -109,7 +109,14 @@ def dispatch_notification(self: Task, delivery_id: str) -> str:
     retry_backoff=True,
 )
 def analyze_incident(self: Task, incident_id: str) -> str:
-    """Reserve advisory AI work; it must not determine monitoring facts."""
+    """Run advisory AI incident diagnosis; it must not determine monitoring facts."""
+    from app.modules.ai.service import sync_generate_ai_analysis
+
+    try:
+        with get_db_session() as session:
+            sync_generate_ai_analysis(session, uuid.UUID(incident_id))
+    except Exception as exc:
+        logger.warning("analyze_incident task failed for incident %s: %s", incident_id, exc)
     return incident_id
 
 
@@ -127,6 +134,7 @@ def send_alert_task(self: Task, delivery_id: str) -> str:
     A failed send sets status=failed, attempt_count=1, sanitized error_message.
     Other channels are not affected by this channel's failure.
     """
+    from app.modules.ai.models import AIAnalysis
     from app.modules.alerts.models import AlertDelivery
     from app.modules.alerts.models import DeliveryStatus as AlertDeliveryStatus
     from app.modules.alerts.senders import AlertMessage, AlertSendError, get_sender
@@ -177,6 +185,16 @@ def send_alert_task(self: Task, delivery_id: str) -> str:
         ).scalar_one_or_none()
         failure_reason = last_result.error_message if last_result else None
 
+        # Advisory AI diagnosis if analysis has been generated
+        ai_record = session.execute(
+            select(AIAnalysis).where(AIAnalysis.incident_id == incident.id)
+        ).scalar_one_or_none()
+        ai_diag = (
+            f"{ai_record.summary} (Root cause: {ai_record.root_cause})"
+            if ai_record and ai_record.status == "completed"
+            else None
+        )
+
         checked_at = (
             incident.opened_at
             if delivery.event_type == "opened"
@@ -188,6 +206,7 @@ def send_alert_task(self: Task, delivery_id: str) -> str:
             event_type=str(delivery.event_type),
             checked_at=checked_at,
             failure_reason=failure_reason,
+            ai_diagnosis=ai_diag,
         )
 
         try:

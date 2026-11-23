@@ -29,6 +29,12 @@ def _opened_hook(
     incident_id: UUID, monitor_id: UUID, failure_count: int, opened_at: datetime
 ) -> None:
     _publish(incident_id, "opened")
+    try:
+        from app.workers.tasks import analyze_incident
+
+        analyze_incident.delay(str(incident_id))
+    except Exception as exc:
+        logger.debug("Asynchronous AI analysis dispatch skipped or deferred: %s", exc)
 
 
 def _resolved_hook(incident_id: UUID) -> None:
