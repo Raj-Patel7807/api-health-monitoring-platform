@@ -1,0 +1,23 @@
+services:
+  postgres:
+    profiles: [local-db]
+
+  backend:
+    depends_on: !override
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to the Aiven PostgreSQL connection URL}
+    volumes:
+      - &aiven-certs
+        type: bind
+        source: ./aiven-certs
+        target: /run/aiven
+        read_only: true
+        bind:
+          create_host_path: true
+
+  worker:
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to the Aiven PostgreSQL connection URL}
+    volumes:
+      - *aiven-certs

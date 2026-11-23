@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMe, type Role } from "../../lib/authApi";
-import { isLoggedIn } from "../../lib/auth";
+import { getSessionId } from "../../lib/auth";
 
 export type { Role };
 
@@ -23,21 +23,23 @@ export interface UseCurrentRoleResult {
  * Roles & Capabilities:
  * - admin: full read + write access across monitors, channels, and team members.
  * - operator: read + write monitors and channels; view-only team members (no member edits).
- * - read_only: view-only monitors, results, incidents, channels; no members access.
+ * - read_only: view monitors, results, and incidents.
  */
 export function useCurrentRole(): UseCurrentRoleResult {
-    const loggedIn = isLoggedIn();
+    const sessionId = getSessionId();
+    const loggedIn = Boolean(sessionId);
 
     const { data, isLoading, isError, error, refetch } = useQuery({
-        queryKey: ["auth", "me"],
+        queryKey: ["auth", "me", sessionId],
         queryFn: getMe,
         enabled: loggedIn,
         staleTime: 5 * 60 * 1000,
         retry: 1,
     });
 
-    const role: Role = data?.team?.role ?? "admin";
-    const isReadOnly = role === "read_only";
+    const role: Role =
+        (loggedIn && !isError ? data?.team?.role : null) ?? "read_only";
+    const isReadOnly = role !== "admin" && role !== "operator";
     const isAdmin = role === "admin";
     const isOperator = role === "operator";
 

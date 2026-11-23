@@ -49,12 +49,8 @@ _PUBLIC_PATHS: set[str] = {
     "/openapi.json",
     "/redoc",
     "/docs/oauth2-redirect",
-    # Test harness endpoints for local webhook/email development (PR #52)
-    "/deliveries/",
-    "/deliveries/{delivery_id}",
-    "/deliveries/{delivery_id}/replay",
-    "/harness/email",
-    "/harness/webhook",
+    # Test harness endpoints for local webhook/email development are no longer
+    # mounted on the router (removed in review-fixes — security issue #6).
 }
 
 # Shared dummy IDs used in parametrized path templates.
@@ -256,6 +252,9 @@ async def test_role_matrix(
     monkeypatch.setenv("ENCRYPTION_KEY", _test_key)
     cfg.get_settings.cache_clear()
 
+    monkeypatch.setattr(
+        "app.modules.monitors.router.get_monitor_health", AsyncMock(return_value="unknown")
+    )
     ctx = _make_context(role)
     path = _resolve_path(path_tmpl)
 
@@ -515,7 +514,7 @@ def _make_dummy_channel(team_id: Any = None) -> NotificationChannel:
         type="slack",
         name="Test Channel",
         is_enabled=True,
-        configuration="{}",
+        configuration={},
         secret_ref="encrypted-blob",
         secret_display_hint="hooks.slack.com/…/X",
         created_at=now,

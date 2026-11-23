@@ -256,7 +256,7 @@ test("RBAC flow: admin signup → add monitor → add read_only member → login
     await expect(page.getByText("readonly@test.com")).toBeVisible();
 
     /* ── 4. Log in as second user (read_only) ── */
-    await page.goto("/login");
+    await page.getByRole("button", { name: "Log out" }).click();
     await expect(
         page.getByRole("heading", { name: "Welcome back" }),
     ).toBeVisible();

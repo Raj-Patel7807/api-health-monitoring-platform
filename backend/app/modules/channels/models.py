@@ -4,7 +4,7 @@ import enum
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, Enum, String, Text, Uuid, func
+from sqlalchemy import JSON, Boolean, Enum, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, DateTimeUTC
@@ -36,8 +36,9 @@ class NotificationChannel(Base):
     )
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # Non-secret configuration options (no keys required currently).
-    configuration: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    # Non-secret configuration stored as JSON to match the JSONB column in PostgreSQL.
+    # Passing a dict avoids the VARCHAR cast that rejects JSONB on the migrated schema.
+    configuration: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     # AES-256-GCM encrypted secret ciphertext + nonce + tag (never plaintext).
     secret_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Safe, truncated preview shown to users after creation (e.g. "hooks.slack.com/…/X7Q").

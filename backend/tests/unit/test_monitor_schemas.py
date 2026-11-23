@@ -20,7 +20,7 @@ def test_monitor_create_valid_defaults() -> None:
     assert req.name == "Production API"
     assert req.url == "https://api.example.com/health"
     assert req.method == HttpMethod.GET
-    assert req.check_interval_seconds == 60
+    assert req.check_interval_seconds == 30
     assert req.timeout_seconds == 10
     assert req.expected_status_code == 200
     assert req.failure_threshold == 3

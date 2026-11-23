@@ -30,6 +30,7 @@ const MONITOR_DETAIL = {
     url: "https://api.example.com/health",
     method: "GET",
     enabled: true,
+    health_status: "failing",
     check_interval_seconds: 60,
     timeout_seconds: 10,
     expected_status_code: 200,
@@ -46,7 +47,10 @@ const MONITOR_DETAIL = {
 /* ── Route mock helper ───────────────────────────────────────────────────── */
 
 async function mockApi(page: Page) {
-    // POST /auth/signup → 201 with tokens
+    // Signup creates an admin membership.
+    await page.route("**/api/v1/auth/me", (route) =>
+        route.fulfill({ json: { team: { role: "admin" } } }),
+    );
     await page.route("**/api/v1/auth/signup", async (route: Route) => {
         await route.fulfill({
             status: 201,
@@ -174,7 +178,7 @@ test("signup → add monitor → detail page shows status, next_check_at, failur
     await page.waitForURL(`**/monitors/${MONITOR_ID}`, { timeout: 5_000 });
 
     /* ── 9. Detail page: verify status chip ── */
-    await expect(page.getByText("Backing off")).toBeVisible();
+    await expect(page.locator(".detail-status-chip")).toHaveText("Failing");
 
     /* ── 10. Detail page: verify next_check_at is shown ── */
     // The formatted date text appears inside the runtime status card

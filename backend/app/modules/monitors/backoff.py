@@ -73,10 +73,17 @@ def reset_monitor_backoff(monitor: Monitor, now: datetime | None = None) -> None
     before this health check ran. Update it so recovery does not leave the
     monitor waiting at the old, slower frequency.
     """
-    current_time = now or datetime.now(UTC)
+    if (
+        monitor.next_check_at is None
+        or monitor.current_interval_seconds != monitor.check_interval_seconds
+        or monitor.backoff_until is not None
+    ):
+        # Only returning from backoff needs a new deadline. An ordinary probe
+        # keeps the deadline that the scheduler already assigned on dispatch.
+        current_time = now or datetime.now(UTC)
+        monitor.next_check_at = current_time + timedelta(seconds=monitor.check_interval_seconds)
     monitor.current_interval_seconds = monitor.check_interval_seconds
     monitor.backoff_until = None
-    monitor.next_check_at = current_time + timedelta(seconds=monitor.check_interval_seconds)
 
 
 def update_monitor_backoff(
@@ -87,9 +94,10 @@ def update_monitor_backoff(
     """Update backoff state based on health check outcome.
 
     - Healthy: resets current_interval_seconds and clears backoff_until.
-    - Failing: escalates current_interval_seconds and sets backoff_until window.
+    - Unconfirmed failures keep the base interval until the configured threshold.
+    - Confirmed failures apply exponential backoff.
     """
-    if is_healthy:
+    if is_healthy or monitor.consecutive_failures < monitor.failure_threshold:
         reset_monitor_backoff(monitor, now=now)
     else:
         apply_failure_backoff(monitor, now=now)

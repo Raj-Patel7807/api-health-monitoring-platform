@@ -5,20 +5,28 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from celery.signals import task_failure, task_retry, worker_init
+
+from app.core.config import get_settings
+from app.core.logging import configure_logging
 from app.workers.failure import record_failed_task
 
-try:
-    from celery.signals import task_failure, task_retry  # type: ignore[import-untyped]
-except ImportError:  # pragma: no cover
-
-    class _Signal:
-        def connect(self, func: Any) -> Any:
-            return func
-
-    task_failure = _Signal()  # type: ignore[assignment]
-    task_retry = _Signal()  # type: ignore[assignment]
-
 logger = logging.getLogger(__name__)
+
+
+@worker_init.connect  # type: ignore[misc]
+def on_worker_init(**kwargs: Any) -> None:
+    """Register B5 alert hooks when the Celery worker process starts.
+
+    The FastAPI lifespan registers the same hooks for the API process, but the
+    Celery worker is a separate process with its own empty callback lists.
+    Both processes must call register_b5_hooks() independently.
+    """
+    from app.modules.alerts.hooks import register_b5_hooks
+
+    configure_logging(get_settings().log_level)
+    register_b5_hooks()
+    logger.info("B5 alert hooks registered in Celery worker process.")
 
 
 @task_failure.connect  # type: ignore[misc]

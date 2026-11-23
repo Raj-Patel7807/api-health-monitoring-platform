@@ -155,7 +155,7 @@ Limits (from the database): `method` in GET/HEAD/POST/PUT/PATCH/DELETE;
 `timeout_seconds` 1–60; `expected_status_code` 100–599; thresholds ≥ 1.
 
 ### `GET /monitors/{id}`
-Roles: any member. List fields plus `timeout_seconds`, `failure_threshold`,
+Roles: any member. The detail response includes `health_status` using the dashboard rules below. List fields plus `timeout_seconds`, `failure_threshold`,
 `recovery_threshold`, `consecutive_failures`, `consecutive_successes`,
 `next_check_at`, `backoff_until`.
 
@@ -309,7 +309,7 @@ One call for the whole dashboard. Roles: any member.
 ```
 
 Rules:
-- `status` is `failing` when the monitor has an open incident. It is `healthy` when it has a recent result and no open incident (one or two failures below the threshold are not yet an incident). It is `unknown` when it has no result in the last 24 hours.
+- `status` is `failing` when the monitor has an open incident. It is `healthy` when it has a recent result and no open incident (one or two failures below the threshold are not yet an incident). It is `unknown` when there is no open incident and no result in the last 24 hours.
 - Disabled and deleted monitors are not returned and are not counted.
 - Ordered failing first, then unknown, then healthy, and by name inside each group.
 - `last_checked_at`, `last_response_time_ms` and `open_incident_id` are `null` when there is nothing to show. `last_response_time_ms` is also `null` when the last check timed out or could not connect.

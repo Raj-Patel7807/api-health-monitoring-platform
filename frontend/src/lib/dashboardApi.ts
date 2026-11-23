@@ -1,19 +1,14 @@
 /**
  * API functions for the Dashboard page (US-13 / S4-F1).
  *
- * The dashboard does not have a dedicated backend endpoint yet; it is composed
- * client-side from two existing endpoints:
- *   - GET /monitors          → all monitors (up to 500 for realistic teams)
- *   - GET /incidents?status=open → open incident per monitor
- *
- * Both responses are already typed and tested in monitorsApi / incidentsApi.
+ * The dashboard uses the monitor list for endpoint URLs and joins open incidents
+ * by monitor ID.
  */
 
-import { clearTokens, getAccessToken } from "./auth";
-import { refreshAccessToken } from "./authApi";
+import { authenticatedFetch } from "./authenticatedFetch";
 import type { DashboardMonitorRow, DashboardSummary } from "./dashboard";
-import type { MonitorListResponse } from "./monitors";
-import type { IncidentListResponse } from "./incidents";
+import type { Monitor } from "./monitors";
+import type { Incident } from "./incidents";
 
 export { type DashboardMonitorRow, type DashboardSummary };
 
@@ -59,54 +54,19 @@ async function buildApiError(response: Response): Promise<ApiError> {
     );
 }
 
-async function sendRequest(
-    url: string,
-    init?: RequestInit,
-    token?: string | null,
-): Promise<Response> {
-    const headers = new Headers(init?.headers);
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    return fetch(url, { ...init, headers });
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const apiBase =
         (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
         "http://localhost:8000";
     const url = `${apiBase}/api/v1${path}`;
-    const token = getAccessToken();
-
     let response: Response;
     try {
-        response = await sendRequest(url, init, token);
+        response = await authenticatedFetch(url, init);
     } catch {
         throw new ApiError(
             "Could not reach the server. Check your connection and try again.",
             0,
         );
-    }
-
-    if (response.status === 401) {
-        let refreshed = false;
-        try {
-            refreshed = await refreshAccessToken();
-        } catch {
-            refreshed = false;
-        }
-        if (refreshed) {
-            const newToken = getAccessToken();
-            try {
-                response = await sendRequest(url, init, newToken);
-            } catch {
-                throw new ApiError(
-                    "Could not reach the server. Check your connection and try again.",
-                    0,
-                );
-            }
-        } else {
-            clearTokens();
-            throw await buildApiError(response);
-        }
     }
 
     if (!response.ok) throw await buildApiError(response);
@@ -132,26 +92,31 @@ export type DashboardData = {
     rows: DashboardMonitorRow[];
 };
 
-/**
- * Fetch dashboard data by composing two API calls in parallel:
- * - GET /monitors (page_size=500 to get all monitors)
- * - GET /incidents?status=open (page_size=500 to find open incidents per monitor)
- */
-export async function getDashboardData(): Promise<DashboardData> {
-    const [monitorsRes, incidentsRes] = await Promise.all([
-        request<MonitorListResponse>("/monitors?page=1&page_size=500", {
-            method: "GET",
-        }),
-        request<IncidentListResponse>(
-            "/incidents?status=open&page=1&page_size=500",
-            {
-                method: "GET",
-            },
-        ),
-    ]);
+async function listAll<T>(
+    path: string,
+    filters?: Record<string, string>,
+): Promise<T[]> {
+    const pageSize = 100;
+    const query = new URLSearchParams(filters);
+    query.set("page_size", String(pageSize));
+    const items: T[] = [];
+    for (let page = 1; ; page++) {
+        query.set("page", String(page));
+        const result = await request<{ items: T[]; total: number }>(
+            `${path}?${query}`,
+            { method: "GET" },
+        );
+        items.push(...result.items);
+        if (result.items.length < pageSize || items.length >= result.total)
+            return items;
+    }
+}
 
-    const monitors = monitorsRes.items ?? [];
-    const openIncidents = incidentsRes.items ?? [];
+export async function getDashboardData(): Promise<DashboardData> {
+    const [monitors, openIncidents] = await Promise.all([
+        listAll<Monitor>("/monitors"),
+        listAll<Incident>("/incidents", { status: "open" }),
+    ]);
 
     // Build a map: monitorId → incidentId for open incidents
     const openIncidentByMonitor = new Map<string, string>();

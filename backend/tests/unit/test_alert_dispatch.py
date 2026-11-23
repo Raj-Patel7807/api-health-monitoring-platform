@@ -611,9 +611,127 @@ def test_get_sender_raises_for_unknown_type() -> None:
     with pytest.raises(ValueError, match="Unsupported alert channel type"):
         get_sender("telegram")
 
-    with pytest.raises(ValueError):
-        get_sender("email")
+    assert get_sender("email")
+    assert get_sender("webhook")
 
     # Known types must not raise
     assert isinstance(get_sender("slack"), SlackSender)
     assert isinstance(get_sender("discord"), DiscordSender)
+
+
+def test_email_and_webhook_deliver_structured_incident_without_secondary_log():
+    import hashlib
+    import hmac
+    import json
+    from email.message import EmailMessage
+
+    import httpx
+
+    from app.core.config import get_settings
+    from app.core.crypto import encrypt
+
+    message = AlertMessage("Payments", "https://example.com", "resolved", datetime.now(UTC))
+    channel = MagicMock(secret_ref=encrypt("owner@example.com"))
+    with patch("smtplib.SMTP") as smtp:
+        get_sender("email").send(channel, message)
+        mail = smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
+        assert isinstance(mail, EmailMessage)
+        assert mail["To"] == "owner@example.com"
+        assert "[RESOLVED] Payments" in mail.get_content()
+
+    channel.secret_ref = encrypt("https://example.com/hooks/test")
+    requests = []
+
+    def receive(request):
+        requests.append(request)
+        return httpx.Response(204)
+
+    client = httpx.Client(transport=httpx.MockTransport(receive))
+    with (
+        patch("httpx.Client", return_value=client),
+        patch("app.services.webhook_sender.is_public_target", return_value=True),
+        patch.object(get_settings(), "webhook_secret", "test-signature"),
+    ):
+        get_sender("webhook").send(channel, message)
+    assert len(requests) == 1
+    body = requests[0].content
+    assert json.loads(body)["event_type"] == "resolved"
+    assert (
+        requests[0].headers["X-Monitoring-Signature"]
+        == hmac.new(b"test-signature", body, hashlib.sha256).hexdigest()
+    )
+
+
+def test_interrupted_provider_attempt_is_not_replayed(session, monkeypatch):
+    from contextlib import nullcontext
+    from datetime import timedelta
+
+    from app.workers.tasks import recover_alert_deliveries, send_alert_task
+
+    team = _make_team_id()
+    monitor = _make_monitor(session, team)
+    incident = _make_incident(session, monitor)
+    channel = _make_channel(session, team)
+    delivery = AlertDelivery(incident_id=incident.id, notification_channel_id=channel.id)
+    session.add(delivery)
+    session.commit()
+    monkeypatch.setattr("app.workers.tasks.get_db_session", lambda: nullcontext(session))
+    sender = MagicMock()
+    sender.send.side_effect = SystemExit
+    monkeypatch.setattr("app.modules.alerts.senders.get_sender", lambda _: sender)
+    with pytest.raises(SystemExit):
+        send_alert_task.run(str(delivery.id))
+    send_alert_task.run(str(delivery.id))
+    sender.send.assert_called_once()
+    delivery.attempt_started_at = datetime.now(UTC) - timedelta(minutes=6)
+    session.commit()
+    recover_alert_deliveries.run()
+    assert delivery.status == DeliveryStatus.FAILED
+    assert "unknown" in delivery.error_message
+
+
+def test_recovery_republishes_stranded_pending_row(session, monkeypatch):
+    from contextlib import nullcontext
+    from datetime import timedelta
+
+    from app.workers.tasks import recover_alert_deliveries, send_alert_task
+
+    team = _make_team_id()
+    monitor = _make_monitor(session, team)
+    incident = _make_incident(session, monitor)
+    channel = _make_channel(session, team)
+    delivery = AlertDelivery(
+        incident_id=incident.id,
+        notification_channel_id=channel.id,
+        created_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    session.add(delivery)
+    session.commit()
+    monkeypatch.setattr("app.workers.tasks.get_db_session", lambda: nullcontext(session))
+    with patch.object(send_alert_task, "delay") as publish:
+        publish.side_effect = [ConnectionError(), None]
+        with pytest.raises(ConnectionError):
+            recover_alert_deliveries.run()
+        recover_alert_deliveries.run()
+        assert publish.call_count == 2
+        publish.assert_called_with(str(delivery.id))
+
+
+def test_worker_suppresses_http_client_webhook_urls(caplog):
+    import logging
+
+    import httpx
+
+    from app.modules.alerts.hooks import unregister_b5_hooks
+    from app.workers.signals import on_worker_init
+
+    try:
+        with caplog.at_level(logging.INFO, logger="httpx"):
+            on_worker_init()
+            with httpx.Client(
+                transport=httpx.MockTransport(lambda _: httpx.Response(204))
+            ) as client:
+                client.post("https://example.com/private-webhook-key")
+        assert "private-webhook-key" not in caplog.text
+    finally:
+        unregister_b5_hooks()

@@ -84,31 +84,26 @@ async def signup(
         full_name=body.full_name,
         password_hash=hash_password(body.password),
     )
-    db.add(user)
-
-    team = Team(name=body.team_name)
-    db.add(team)
-
-    # Flush to get generated UUIDs before creating the membership FK.
-    await db.flush()
-
-    membership = TeamMembership(
-        team_id=team.id,
-        user_id=user.id,
-        role=TeamRole.admin,
-    )
-    db.add(membership)
-
+    team = Team(name=body.team_name or f"My Team {uuid.uuid4()}")
     try:
+        db.add(user)
         await db.flush()
     except IntegrityError as err:
-        # Race condition: another request registered the same email between
-        # our SELECT and INSERT.  Roll back and report the conflict.
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email address already exists.",
         ) from err
+
+    try:
+        db.add(team)
+        await db.flush()
+    except IntegrityError as err:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="This team name is already in use.") from err
+
+    db.add(TeamMembership(team_id=team.id, user_id=user.id, role=TeamRole.admin))
+    await db.flush()
 
     logger.info("New user registered: user_id=%s team_id=%s", user.id, team.id)
     return _make_token_pair(user)

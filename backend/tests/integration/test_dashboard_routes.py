@@ -263,6 +263,11 @@ async def test_dashboard_monitors_status_and_ordering(client: AsyncClient) -> No
     assert monitors[0]["open_incident_id"] == str(open_inc_id)
     assert monitors[0]["last_response_time_ms"] == 1200
 
+    for item in monitors:
+        detail = await client.get(f"/api/v1/monitors/{item['id']}", headers=headers)
+        assert detail.status_code == 200
+        assert detail.json()["health_status"] == item["status"]
+
     # Remaining monitors
     remaining_ids = {m["id"] for m in monitors[1:]}
     assert remaining_ids == {str(m_healthy.id), str(m_unknown.id)}

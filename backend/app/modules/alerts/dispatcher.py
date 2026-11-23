@@ -6,23 +6,18 @@ Channel precedence (AC-03.4):
   use ONLY those.
 - Otherwise fall back to team-wide channels (monitor_id IS NULL, is_enabled, not deleted).
 
-Exactly-once guarantee:
-- One alert_deliveries row per (incident_id, channel_id, event_type), checked before insert.
-- The Celery task checks status == 'pending' before sending (idempotent).
+Delivery rows are committed with incident transitions and claimed by the sending worker.
 """
 
 from __future__ import annotations
 
-import logging
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
 from app.modules.alerts.models import AlertDelivery, DeliveryEventType, DeliveryStatus
 from app.modules.channels.models import NotificationChannel
-
-logger = logging.getLogger(__name__)
 
 
 def pick_channels(session: Session, monitor_id: UUID, team_id: UUID) -> list[NotificationChannel]:
@@ -97,46 +92,16 @@ def create_delivery_rows(
     return deliveries
 
 
-def dispatch_alert(
-    session: Session,
-    incident_id: UUID,
-    monitor_id: UUID,
-    team_id: UUID,
-    event_type: str,
-) -> None:
-    """Pick channels, create delivery rows, and enqueue Celery tasks.
-
-    This is called from post-commit hooks so the rows must be committed before
-    the task can be picked up.  We call session.commit() ourselves here if
-    new rows were added, then enqueue the tasks.
-    """
+def publish_pending_deliveries(session: Session, *filters: ColumnElement[bool]) -> None:
+    """Publish committed, unclaimed rows. Beat retries a failed publication."""
     from app.workers.tasks import send_alert_task
 
-    channels = pick_channels(session, monitor_id, team_id)
-    if not channels:
-        logger.info(
-            "dispatch_alert: no applicable channels for monitor %s / team %s", monitor_id, team_id
+    ids = session.scalars(
+        select(AlertDelivery.id).where(
+            AlertDelivery.status == DeliveryStatus.PENDING,
+            AlertDelivery.attempt_started_at.is_(None),
+            *filters,
         )
-        return
-
-    deliveries = create_delivery_rows(session, incident_id, channels, event_type)
-
-    # Flush + commit so tasks can read the rows
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        logger.exception(
-            "dispatch_alert: failed to commit delivery rows for incident %s", incident_id
-        )
-        return
-
-    for delivery in deliveries:
-        if delivery.status == DeliveryStatus.PENDING:
-            try:
-                send_alert_task.delay(str(delivery.id))
-            except Exception:
-                logger.exception(
-                    "dispatch_alert: failed to enqueue send_alert_task for delivery %s",
-                    delivery.id,
-                )
+    )
+    for delivery_id in ids:
+        send_alert_task.delay(str(delivery_id))

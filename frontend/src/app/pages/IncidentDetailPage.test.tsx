@@ -1,3 +1,4 @@
+import { mockAdminProfile } from "../../test/mockAdminProfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,10 +21,12 @@ function renderApp(initialEntry = "/incidents/inc-123") {
 
 describe("IncidentDetailPage", () => {
     beforeEach(() => {
+        mockAdminProfile();
         localStorage.setItem("access_token", "test-token");
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
     });

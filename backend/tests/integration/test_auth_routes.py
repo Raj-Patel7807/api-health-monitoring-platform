@@ -208,3 +208,17 @@ async def test_me_no_token_returns_401(client: AsyncClient) -> None:
     versions and 401 on newer ones; we assert the actual unauthenticated status."""
     resp = await client.get("/api/v1/auth/me")
     assert resp.status_code in (401, 403)
+
+
+async def test_two_signups_without_team_name_create_distinct_teams(client):
+    names = []
+    for email in ["default-one@example.com", "default-two@example.com"]:
+        payload = {**_SIGNUP_PAYLOAD, "email": email}
+        del payload["team_name"]
+        result = await client.post("/api/v1/auth/signup", json=payload)
+        assert result.status_code == 201
+        profile = await client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {result.json()['access_token']}"}
+        )
+        names.append(profile.json()["team"]["name"])
+    assert len(set(names)) == 2

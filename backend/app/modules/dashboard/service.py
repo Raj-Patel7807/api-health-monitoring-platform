@@ -24,21 +24,31 @@ STATUS_SORT_ORDER = {"failing": 0, "unknown": 1, "healthy": 2}
 
 
 def derive_monitor_status(
-    result_status: str | None,
+    last_checked_at: datetime | None,
     open_incident_id: UUID | None,
 ) -> str:
-    """Derive health status for an active monitor on the dashboard.
-
-    Status rules:
-    - If no recent check result within the freshness window: 'unknown'
-    - Else if an open incident exists or the latest check failed: 'failing'
-    - Else: 'healthy'
-    """
-    if result_status is None:
-        return "unknown"
-    if open_incident_id is not None or result_status == "failing":
+    """An open incident stays failing until recovery; unchecked monitors are unknown."""
+    if open_incident_id is not None:
         return "failing"
-    return "healthy"
+    return "unknown" if last_checked_at is None else "healthy"
+
+
+async def get_monitor_health(db: AsyncSession, monitor_id: UUID) -> str:
+    since = datetime.now(UTC) - timedelta(hours=DEFAULT_FRESHNESS_HOURS)
+    recent = (
+        select(HealthCheckResult.checked_at)
+        .where(HealthCheckResult.monitor_id == monitor_id, HealthCheckResult.checked_at >= since)
+        .order_by(HealthCheckResult.checked_at.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
+    incident = (
+        select(Incident.id)
+        .where(Incident.monitor_id == monitor_id, Incident.status == "open")
+        .scalar_subquery()
+    )
+    last_checked_at, incident_id = (await db.execute(select(recent, incident))).one()
+    return derive_monitor_status(last_checked_at, incident_id)
 
 
 async def get_dashboard(
@@ -77,7 +87,6 @@ async def get_dashboard(
     latest_results_subq = (
         select(
             HealthCheckResult.monitor_id,
-            HealthCheckResult.status.label("result_status"),
             HealthCheckResult.checked_at.label("last_checked_at"),
             HealthCheckResult.response_time_ms.label("last_response_time_ms"),
             rn,
@@ -94,7 +103,6 @@ async def get_dashboard(
         select(
             Monitor.id,
             Monitor.name,
-            latest_results_subq.c.result_status,
             latest_results_subq.c.last_checked_at,
             latest_results_subq.c.last_response_time_ms,
             Incident.id.label("open_incident_id"),
@@ -124,9 +132,9 @@ async def get_dashboard(
     open_incidents_count = 0
 
     for row in rows:
-        m_id, m_name, res_status, last_checked, last_rt, open_inc_id = row
+        m_id, m_name, last_checked, last_rt, open_inc_id = row
 
-        status = derive_monitor_status(res_status, open_inc_id)
+        status = derive_monitor_status(last_checked, open_inc_id)
 
         if status == "healthy":
             healthy_count += 1
@@ -143,8 +151,8 @@ async def get_dashboard(
                 id=m_id,
                 name=m_name,
                 status=status,
-                last_checked_at=last_checked if res_status is not None else None,
-                last_response_time_ms=last_rt if res_status is not None else None,
+                last_checked_at=last_checked,
+                last_response_time_ms=last_rt,
                 open_incident_id=open_inc_id,
             )
         )

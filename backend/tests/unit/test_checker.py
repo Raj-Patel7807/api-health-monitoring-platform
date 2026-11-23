@@ -15,6 +15,7 @@ The in-memory SQLite engine is re-used from the existing scheduler test pattern.
 import socket
 import ssl
 from collections.abc import Generator
+from contextlib import closing
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -96,7 +97,7 @@ def base_monitor(db_session: Session) -> Monitor:
 
 def _fake_response(status_code: int) -> httpx.Response:
     """Return a minimal httpx.Response with the given status code."""
-    return httpx.Response(status_code=status_code, content=b"")
+    return httpx.Response(status_code=status_code, stream=httpx.ByteStream(b""))
 
 
 # ===========================================================================
@@ -119,7 +120,7 @@ class TestExecuteHttpCheck:
     ) -> CheckResult:
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.side_effect = mock_client
+            ctx.stream.side_effect = lambda *args, **kwargs: closing(mock_client(*args, **kwargs))
             return execute_http_check(url, method, expected, timeout, user_agent, monitor_id)
 
     # AC-06.1 — expected status → healthy
@@ -320,7 +321,7 @@ class TestExecuteHttpCheck:
     def test_client_is_created_with_verify_and_timeout(self) -> None:
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.return_value = _fake_response(200)
+            ctx.stream.return_value.__enter__.return_value = _fake_response(200)
             execute_http_check(MONITOR_URL, "GET", 200, 7, USER_AGENT, MONITOR_ID)
 
         mock_cls.assert_called_once_with(timeout=7, verify=True, trust_env=False)
@@ -448,7 +449,7 @@ class TestCheckMonitorById:
         """Helper: run check_monitor_by_id with a mocked 'status_code' response."""
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.return_value = _fake_response(status_code)
+            ctx.stream.return_value.__enter__.return_value = _fake_response(status_code)
             return check_monitor_by_id(str(monitor.id), db_session=db_session)
 
     # AC-06.1 — healthy monitor → status=healthy, successes incremented
@@ -481,7 +482,7 @@ class TestCheckMonitorById:
     ) -> None:
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.side_effect = httpx.ReadTimeout("timed out", request=MagicMock())
+            ctx.stream.side_effect = httpx.ReadTimeout("timed out", request=MagicMock())
             result = check_monitor_by_id(str(base_monitor.id), db_session=db_session)
 
         assert result is not None
@@ -496,7 +497,7 @@ class TestCheckMonitorById:
     ) -> None:
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.side_effect = httpx.ConnectError("refused")
+            ctx.stream.side_effect = httpx.ConnectError("refused")
             result = check_monitor_by_id(str(base_monitor.id), db_session=db_session)
 
         assert result is not None
@@ -512,7 +513,7 @@ class TestCheckMonitorById:
             ssl_exc = ssl.SSLError("cert verify failed")
             conn_exc = httpx.ConnectError("SSL error")
             conn_exc.__cause__ = ssl_exc
-            ctx.request.side_effect = conn_exc
+            ctx.stream.side_effect = conn_exc
             result = check_monitor_by_id(str(base_monitor.id), db_session=db_session)
 
         assert result is not None
@@ -623,10 +624,10 @@ class TestCheckMonitorById:
 
         with patch("app.modules.monitors.checker.httpx.Client") as mock_cls:
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.return_value = _fake_response(200)
+            ctx.stream.return_value.__enter__.return_value = _fake_response(200)
             check_monitor_by_id(str(base_monitor.id), db_session=db_session)
 
-        sent_headers = ctx.request.call_args.kwargs["headers"]
+        sent_headers = ctx.stream.call_args.kwargs["headers"]
         assert sent_headers["User-Agent"] == "APIMonitor/1.0"
 
         # Real-session path: no db_session injected, so get_db_session() is used
@@ -640,7 +641,7 @@ class TestCheckMonitorById:
         ):
             mock_get.return_value.__enter__.return_value = db_session
             ctx = mock_cls.return_value.__enter__.return_value
-            ctx.request.return_value = _fake_response(200)
+            ctx.stream.return_value.__enter__.return_value = _fake_response(200)
 
             result = check_monitor_by_id(str(base_monitor.id))
 
@@ -683,7 +684,7 @@ def test_domain_resolving_to_private_address_is_blocked() -> None:
 
 def test_proxy_error_is_classified_as_connection_failure() -> None:
     with patch("app.modules.monitors.checker.httpx.Client") as cls:
-        cls.return_value.__enter__.return_value.request.side_effect = httpx.ProxyError(
+        cls.return_value.__enter__.return_value.stream.side_effect = httpx.ProxyError(
             "Proxy connection failed"
         )
         result = execute_http_check(MONITOR_URL, "GET", 200, 10, USER_AGENT, MONITOR_ID)
@@ -700,7 +701,9 @@ def test_overlapping_checks_do_not_lose_failure_increments(
         assert stale is not None
         assert stale.consecutive_failures == 0
         with patch("app.modules.monitors.checker.httpx.Client") as cls:
-            cls.return_value.__enter__.return_value.request.return_value = _fake_response(500)
+            cls.return_value.__enter__.return_value.stream.side_effect = lambda *args, **kwargs: (
+                closing(_fake_response(500))
+            )
             first = check_monitor_by_id(str(base_monitor.id), db_session=db_session)
             second = check_monitor_by_id(str(base_monitor.id), db_session=other_session)
         assert first is not None and first.consecutive_failures == 1
@@ -709,3 +712,36 @@ def test_overlapping_checks_do_not_lose_failure_increments(
         assert base_monitor.consecutive_failures == 2
     finally:
         other_session.close()
+
+
+def test_duplicate_scheduled_job_records_only_one_failure(db_session, base_monitor):
+    check_id = uuid4()
+    base_monitor.pending_check_id = check_id
+    db_session.commit()
+    with patch(
+        "app.modules.monitors.checker.execute_http_check",
+        return_value=CheckResult(str(base_monitor.id), "failing"),
+    ) as probe:
+        for _ in range(2):
+            check_monitor_by_id(str(base_monitor.id), db_session, str(check_id))
+    assert probe.call_count == 1
+    assert base_monitor.consecutive_failures == 1
+
+
+def test_large_response_closes_after_one_excerpt():
+    closed = []
+
+    class LargeBody(httpx.SyncByteStream):
+        def __iter__(self):
+            yield b"x" * 2000
+            raise AssertionError("checker consumed more than its excerpt budget")
+
+        def close(self):
+            closed.append(True)
+
+    transport = httpx.MockTransport(lambda request: httpx.Response(503, stream=LargeBody()))
+    client = httpx.Client(transport=transport)
+    with patch("app.modules.monitors.checker.httpx.Client", return_value=client):
+        result = execute_http_check(MONITOR_URL, "GET", 200, 5, USER_AGENT, MONITOR_ID)
+    assert result.body_excerpt == "x" * 500
+    assert closed == [True]
