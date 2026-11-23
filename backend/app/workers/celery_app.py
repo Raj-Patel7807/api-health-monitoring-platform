@@ -1,5 +1,6 @@
-from app.core.config import get_settings
 from celery import Celery  # type: ignore[attr-defined]
+
+from app.core.config import get_settings
 
 redis_url = get_settings().celery_redis_url
 

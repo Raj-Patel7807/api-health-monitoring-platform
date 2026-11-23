@@ -4,6 +4,7 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from celery import Task  # type: ignore[attr-defined]
 from kombu.exceptions import OperationalError as BrokerOperationalError  # type: ignore[import-untyped]
 from redis.exceptions import ConnectionError as RedisConnectionError  # type: ignore[import-untyped]
 from sqlalchemy import desc, select, text, update
@@ -12,7 +13,6 @@ from sqlalchemy.exc import OperationalError as DatabaseOperationalError
 from app.db.session import get_db_session
 from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.workers.celery_app import celery_app
-from celery import Task  # type: ignore[attr-defined]
 
 logger = logging.getLogger(__name__)
 
