@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Webhook configuration
     webhook_secret: str = ""
     llm_enabled: bool = False
+    llm_provider: str = "rules"
+    llm_api_key: str = ""
+    llm_model: str = "gemini-1.5-flash"
 
     # Base64url-encoded 32-byte AES-256 key. Generate: python -m app.core.crypto
     # No default on purpose: a shared default key would defeat the encryption.

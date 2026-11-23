@@ -21,6 +21,7 @@ jobs:
             # Ephemeral CI services only; NEVER production credentials.
             DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/api_health
             REDIS_URL: redis://localhost:6379/0
+            LLM_PROVIDER: deterministic
         services:
             postgres:
                 image: pgvector/pgvector:pg16
@@ -54,7 +55,9 @@ jobs:
             - name: Apply migrations
               run: uv run alembic upgrade head
             - name: Run database and integration tests
-              run: uv run pytest tests/integration -v
+              run: uv run pytest tests/integration -v --ignore=tests/integration/test_incidents_integration.py --ignore=tests/integration/test_migration_contract.py
+            - name: Run PostgreSQL-only integration tests
+              run: uv run pytest tests/integration/test_incidents_integration.py tests/integration/test_migration_contract.py -v
 
     frontend-smoke:
         runs-on: ubuntu-latest

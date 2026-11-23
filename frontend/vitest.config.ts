@@ -6,5 +6,17 @@ export default defineConfig({
         globals: true,
         exclude: ["e2e/**", "node_modules/**"],
         setupFiles: ["./src/test/setup.ts"],
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "json", "html"],
+            exclude: [
+                "e2e/**",
+                "node_modules/**",
+                "**/*.css",
+                "src/mocks/**",
+                "src/test/**",
+                "dist/**",
+            ],
+        },
     },
 });

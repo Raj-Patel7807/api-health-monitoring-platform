@@ -38,6 +38,7 @@ def _format_message(
     event_type: str,
     checked_at: datetime,
     failure_reason: str | None,
+    ai_diagnosis: str | None = None,
 ) -> str:
     """Format the alert text shared by all senders."""
     tag = "[OPENED]" if event_type == "opened" else "[RESOLVED]"
@@ -45,6 +46,8 @@ def _format_message(
     line = f"{tag} {monitor_name} ({monitor_url}) \u2014 {ts}"
     if event_type == "opened" and failure_reason:
         line += f"\nReason: {failure_reason}"
+    if event_type == "opened" and ai_diagnosis:
+        line += f"\nAI Advisory Diagnosis: {ai_diagnosis}"
     return line
 
 
@@ -57,6 +60,7 @@ class AlertMessage:
     event_type: str  # "opened" | "resolved"
     checked_at: datetime
     failure_reason: str | None = None
+    ai_diagnosis: str | None = None
 
 
 class AlertSender(abc.ABC):
@@ -91,6 +95,7 @@ class SlackSender(AlertSender):
             event_type=message.event_type,
             checked_at=message.checked_at,
             failure_reason=message.failure_reason,
+            ai_diagnosis=message.ai_diagnosis,
         )
         try:
             with httpx.Client(timeout=5.0) as client:
@@ -126,6 +131,7 @@ class DiscordSender(AlertSender):
             event_type=message.event_type,
             checked_at=message.checked_at,
             failure_reason=message.failure_reason,
+            ai_diagnosis=message.ai_diagnosis,
         )
         try:
             with httpx.Client(timeout=5.0) as client:
