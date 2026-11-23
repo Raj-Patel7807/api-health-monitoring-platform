@@ -2,7 +2,7 @@
 
 A course project for monitoring API endpoints, recording health results, opening confirmed incidents, and sending useful alerts. It is a modular monolith: one FastAPI service, a React web app, PostgreSQL, Redis, and separate Celery worker processes.
 
-Accounts, team roles, monitors, check history, incident tracking, the dashboard, and incident notifications are implemented.
+Accounts, team roles, monitors, check history, incident tracking, the dashboard, and incident notifications are implemented. The platform also includes API documentation import (`api.md` or OpenAPI JSON/YAML) with SSRF-safe candidate extraction, and advisory AI-powered incident assistance with root-cause analysis and remediation steps.
 
 When you sign in, the browser remembers your session for that site. Reopening the same address in the same browser profile takes you to the dashboard. By default the app renews a 15-minute access token using a refresh token valid for seven days after sign-in or the last successful renewal. Choose **Log out** to end the session in that browser.
 

@@ -349,6 +349,137 @@ There is no endpoint to remove a member yet.
 
 ---
 
+## Monitor Import — API Documentation Upload ✅
+
+### `POST /monitors/import/preview` ✅
+
+Uploads an API documentation file (Markdown or OpenAPI JSON/YAML) and returns
+a preview of discovered endpoint candidates. No monitors are created yet.
+
+**Auth:** Admin or Operator (Operator+ write permission required).
+
+**Request:** multipart/form-data
+
+| Field | Type | Required | Description |
+|---|---|:---:|---|
+| `file` | File | ✅ | The API documentation file. Max 2 MB, UTF-8. |
+| `base_url` | string | ❌ | Optional base URL prepended to relative endpoint paths. |
+
+Supported file formats:
+- Markdown (`.md`): Parses `### GET /path` headings and `| METHOD | /path | STATUS |` tables.
+- OpenAPI / Swagger (`openapi.json`, `swagger.yaml`, etc.): Parses `paths` from JSON or YAML.
+
+```json
+// 200 Response
+{
+    "filename": "api.md",
+    "total_found": 5,
+    "valid_count": 4,
+    "items": [
+        {
+            "name": "GET /api/v1/users",
+            "url": "https://api.example.com/api/v1/users",
+            "method": "GET",
+            "expected_status_code": 200,
+            "check_interval_seconds": 30,
+            "timeout_seconds": 10,
+            "failure_threshold": 3,
+            "recovery_threshold": 2,
+            "description": "List users",
+            "is_valid": true,
+            "validation_error": null
+        }
+    ]
+}
+```
+
+Errors: `400` non-UTF-8 file, `403` read_only role, `413` file exceeds 2 MB, `422` missing file.
+
+---
+
+### `POST /monitors/import/commit` ✅
+
+Persists selected candidate monitors from the preview step as active monitors
+belonging to the caller's team. SSRF validation is re-applied on each URL.
+
+**Auth:** Admin or Operator.
+
+**Request:** `application/json`
+
+```json
+{
+    "base_url": null,
+    "items": [
+        {
+            "name": "GET /api/v1/users",
+            "url": "https://api.example.com/api/v1/users",
+            "method": "GET",
+            "expected_status_code": 200,
+            "check_interval_seconds": 60,
+            "timeout_seconds": 10
+        }
+    ]
+}
+```
+
+```json
+// 201 Response
+{
+    "imported_count": 2,
+    "monitor_ids": ["uuid1", "uuid2"]
+}
+```
+
+Errors: `400` empty items or SSRF-blocked URL, `403` read_only role, `422` invalid fields.
+
+---
+
+## AI Incident Assistance ✅
+
+Asynchronous, advisory-only AI-generated incident analysis. Monitoring and
+incident status remain strictly deterministic. AI is never the source of truth.
+
+### `GET /incidents/{id}/ai-analysis` ✅
+
+Returns the existing analysis for an incident, or synchronously generates one
+using the configured AI provider (deterministic rules engine by default).
+
+**Auth:** Caller must have read access to the incident's monitor's team.
+
+```json
+// 200 Response
+{
+    "id": "uuid",
+    "incident_id": "uuid",
+    "status": "completed",
+    "summary": "The endpoint https://api.example.com/checkout timed out after 3 consecutive failures.",
+    "root_cause": "High server latency or network saturation may have caused the timeout.",
+    "suggested_actions": ["Check server CPU and memory", "Review recent deployments"],
+    "investigation_steps": ["Inspect server logs", "Run curl with verbose output"],
+    "prevention_steps": ["Set up auto-scaling", "Add circuit breakers"],
+    "model": "deterministic-rules",
+    "error_message": null,
+    "created_at": "2026-11-24T00:00:00Z"
+}
+```
+
+Errors: `404` incident not found or cross-team access.
+
+---
+
+### `POST /incidents/{id}/ai-analysis` ✅
+
+Forces regeneration of the AI analysis for the given incident. Useful for
+re-running after reviewing logs or changing LLM configuration.
+
+**Auth:** Caller must have write access to the incident's monitor's team (operator+).
+
+Returns the same response shape as `GET /incidents/{id}/ai-analysis`.
+
+Errors: `403` read_only role, `404` incident not found or cross-team access.
+
+---
+
 ## RBAC matrix
 
 Enforced by a `require_role(...)` dependency on every route below. A resource
@@ -362,6 +493,10 @@ that belongs to another team returns `404` regardless of role.
 | View, create, edit and delete notification channels | ✅ | ✅ | ❌ (403, even to view) |
 | View team members | ✅ | ✅ | ❌ |
 | Add members and change roles | ✅ | ❌ | ❌ |
+| Import API documentation (preview) | ✅ | ✅ | ❌ |
+| Import API documentation (commit) | ✅ | ✅ | ❌ |
+| View AI incident analysis | ✅ | ✅ | ✅ |
+| Re-trigger AI incident analysis | ✅ | ✅ | ❌ |
 | `GET /auth/me` | ✅ | ✅ | ✅ |
 
 Public routes (no token): signup, login, refresh, the health check, and the API docs.
