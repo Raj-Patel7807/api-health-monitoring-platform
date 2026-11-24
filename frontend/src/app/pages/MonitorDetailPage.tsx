@@ -45,20 +45,16 @@ function formatRelative(iso: string | null | undefined): string {
 
 function statusClass(monitor: Monitor): string {
     if (!monitor.enabled) return "monitors-chip--warning";
-    if (monitor.backoff_until && new Date(monitor.backoff_until) > new Date()) {
-        return "monitors-chip--error";
-    }
-    if ((monitor.consecutive_failures ?? 0) > 0) return "monitors-chip--error";
-    return "monitors-chip--ok";
+    if (monitor.health_status === "failing") return "monitors-chip--error";
+    if (monitor.health_status === "healthy") return "monitors-chip--ok";
+    return "monitors-chip--warning";
 }
 
 function statusLabel(monitor: Monitor): string {
     if (!monitor.enabled) return "Paused";
-    if (monitor.backoff_until && new Date(monitor.backoff_until) > new Date()) {
-        return "Backing off";
-    }
-    if ((monitor.consecutive_failures ?? 0) > 0) return "Failing";
-    return "Healthy";
+    if (monitor.health_status === "failing") return "Failing";
+    if (monitor.health_status === "healthy") return "Healthy";
+    return "Unknown";
 }
 
 /* ── Detail row helper ───────────────────────────────────────────────────── */
@@ -87,7 +83,7 @@ export function MonitorDetailPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { toasts, addToast, dismissToast } = useToast();
-    const { isReadOnly } = useCurrentRole();
+    const { isReadOnly, isAdmin } = useCurrentRole();
 
     const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -228,15 +224,17 @@ export function MonitorDetailPage() {
                                 >
                                     Edit
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="monitors-button monitors-button--danger"
-                                    aria-label={`Delete ${monitor.name}`}
-                                    onClick={() => setDeleteOpen(true)}
-                                    data-testid="delete-monitor-btn"
-                                >
-                                    Delete
-                                </button>
+                                {isAdmin && (
+                                    <button
+                                        type="button"
+                                        className="monitors-button monitors-button--danger"
+                                        aria-label={`Delete ${monitor.name}`}
+                                        onClick={() => setDeleteOpen(true)}
+                                        data-testid="delete-monitor-btn"
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>

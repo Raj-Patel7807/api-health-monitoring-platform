@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
+from app.modules.monitors.backoff import update_monitor_backoff
 from app.modules.monitors.models import Monitor
 from app.modules.monitors.scheduler import find_and_schedule_due_monitors
 from app.workers.celery_app import celery_app
@@ -34,6 +35,27 @@ def test_beat_schedule_and_route_configured() -> None:
     }
 
 
+def test_poll_jitter_and_probe_duration_do_not_shift_a_30_second_schedule(
+    db_session: Session,
+) -> None:
+    start = datetime(2026, 10, 13, 12, tzinfo=UTC)
+    monitor = Monitor(
+        team_id=uuid4(), name="Cadence", url="https://example.com", next_check_at=start
+    )
+    db_session.add(monitor)
+    db_session.commit()
+
+    for index, lateness in enumerate((1, 4, 2)):
+        due = start + timedelta(seconds=30 * index)
+        dispatch = due + timedelta(seconds=lateness)
+        assert find_and_schedule_due_monitors(db_session, dispatch, lambda *_: None) == [
+            str(monitor.id)
+        ]
+        update_monitor_backoff(monitor, is_healthy=index != 1, now=dispatch + timedelta(seconds=5))
+        db_session.commit()
+        assert monitor.next_check_at == due + timedelta(seconds=30)
+
+
 def test_find_and_schedule_due_monitors_schedules_due_monitor(db_session: Session) -> None:
     now = datetime(2026, 10, 13, 12, 0, 0, tzinfo=UTC)
     team_id = uuid4()
@@ -54,7 +76,7 @@ def test_find_and_schedule_due_monitors_schedules_due_monitor(db_session: Sessio
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == [str(monitor.id)]
@@ -85,7 +107,7 @@ def test_find_and_schedule_due_monitors_handles_null_next_check_at(
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == [str(monitor.id)]
@@ -112,7 +134,7 @@ def test_find_and_schedule_due_monitors_skips_future_monitors(db_session: Sessio
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == []
@@ -140,7 +162,7 @@ def test_find_and_schedule_due_monitors_skips_disabled_monitors(db_session: Sess
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == []
@@ -169,7 +191,7 @@ def test_find_and_schedule_due_monitors_skips_soft_deleted_monitors(
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == []
@@ -207,7 +229,7 @@ def test_find_and_schedule_due_monitors_respects_backoff(db_session: Session) ->
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == [str(monitor_backoff_expired.id)]
@@ -237,7 +259,7 @@ def test_find_and_schedule_due_monitors_uses_default_dispatcher(db_session: Sess
         assert result == [str(monitor.id)]
         mock_send_task.assert_called_once_with(
             "app.workers.tasks.run_health_check",
-            args=[str(monitor.id)],
+            args=[str(monitor.id), str(monitor.pending_check_id)],
             queue="monitoring",
         )
 
@@ -257,7 +279,7 @@ def test_find_and_schedule_due_monitors_rolls_back_on_exception(db_session: Sess
     db_session.add(monitor)
     db_session.commit()
 
-    def exploding_dispatcher(_: str) -> None:
+    def exploding_dispatcher(_: str, check_id: str) -> None:
         raise RuntimeError("Queue connection failed")
 
     with pytest.raises(RuntimeError, match="Queue connection failed"):
@@ -322,7 +344,7 @@ def test_find_and_schedule_due_monitors_fallback_interval(db_session: Session) -
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=now,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == [str(monitor.id)]
@@ -374,7 +396,7 @@ def test_restart_does_not_lose_future_schedule(db_session: Session) -> None:
         result = find_and_schedule_due_monitors(
             session=new_session,
             now=now,
-            task_dispatcher=dispatched.append,
+            task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
         )
         assert result == []
         assert dispatched == []
@@ -431,7 +453,7 @@ def test_restart_catches_up_due_monitors_missed_during_downtime(db_session: Sess
         result = find_and_schedule_due_monitors(
             session=restart_session,
             now=restart_time,
-            task_dispatcher=dispatched.append,
+            task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
         )
 
         # Both missed monitors must be scheduled immediately
@@ -468,10 +490,31 @@ def test_restart_picks_up_new_monitors_added_during_downtime(db_session: Session
     result = find_and_schedule_due_monitors(
         session=db_session,
         now=restart_time,
-        task_dispatcher=dispatched.append,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert result == [str(new_monitor.id)]
     assert dispatched == [str(new_monitor.id)]
     db_session.refresh(new_monitor)
     assert new_monitor.next_check_at == restart_time + timedelta(seconds=45)
+
+
+def test_partial_publication_retries_only_uncommitted_monitor(db_session: Session) -> None:
+    now = datetime.now(UTC)
+    monitors = [
+        Monitor(team_id=uuid4(), name=name, url="https://example.com", next_check_at=now)
+        for name in ("first", "second")
+    ]
+    db_session.add_all(monitors)
+    db_session.commit()
+    accepted = []
+
+    def interrupted(monitor_id: str, check_id: str) -> None:
+        if accepted:
+            raise ConnectionError
+        accepted.append((monitor_id, check_id))
+
+    with pytest.raises(ConnectionError):
+        find_and_schedule_due_monitors(db_session, now, interrupted)
+    find_and_schedule_due_monitors(db_session, now, lambda m, c: accepted.append((m, c)))
+    assert len(accepted) == len({m for m, _ in accepted}) == 2

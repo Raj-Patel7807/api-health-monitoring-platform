@@ -159,6 +159,14 @@ async def test_channel_crud_lifecycle(client: AsyncClient) -> None:
         with pytest.raises(DecryptionError):
             decrypt(tampered)
 
+    invalid = await client.patch(
+        f"/api/v1/notification-channels/{channel_id}",
+        json={"secret_value": "invalid-replacement-secret"},
+        headers=headers,
+    )
+    assert invalid.status_code == 422
+    assert "invalid-replacement-secret" not in invalid.text
+
     # 2. List channels
     list_resp = await client.get("/api/v1/notification-channels", headers=headers)
     assert list_resp.status_code == 200

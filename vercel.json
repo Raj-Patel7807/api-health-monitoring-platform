@@ -1,0 +1,40 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "frontend",
+      "framework": "vite",
+      "buildCommand": "VITE_API_BASE_URL='' npm run build",
+      "rewrites": [
+        { "source": "/((?!assets/).*)", "destination": "/index.html" }
+      ]
+    },
+    "api": {
+      "root": "backend",
+      "framework": "fastapi",
+      "entrypoint": "app.main:app"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": { "service": "api" } },
+    { "source": "/health", "destination": { "service": "api" } },
+    { "source": "/docs/:path*", "destination": { "service": "api" } },
+    { "source": "/redoc", "destination": { "service": "api" } },
+    { "source": "/openapi.json", "destination": { "service": "api" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
+  ],
+  "daemons": {
+    "worker": {
+      "root": "backend",
+      "entrypoint": "Dockerfile",
+      "command": ["/app/.venv/bin/celery", "-A", "app.workers.celery_app:celery_app", "worker", "--loglevel=INFO", "-Q", "monitoring,notifications,ai,maintenance"],
+      "instances": { "iad1": 1 }
+    },
+    "beat": {
+      "root": "backend",
+      "entrypoint": "Dockerfile",
+      "command": ["/app/.venv/bin/celery", "-A", "app.workers.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"],
+      "instances": { "iad1": 1 }
+    }
+  }
+}

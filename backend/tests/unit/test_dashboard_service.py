@@ -48,21 +48,11 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 def test_derive_monitor_status_rules() -> None:
     """Test all status derivation permutations."""
-    # 1. No check result within window -> unknown regardless of open incident
+    recent = datetime.now(UTC)
     assert derive_monitor_status(None, None) == "unknown"
-    assert derive_monitor_status(None, uuid4()) == "unknown"
-
-    # 2. Check result is healthy, no open incident -> healthy
-    assert derive_monitor_status("healthy", None) == "healthy"
-
-    # 3. Check result is failing, no open incident -> failing
-    assert derive_monitor_status("failing", None) == "failing"
-
-    # 4. Check result is healthy, but open incident exists -> failing (undergoing recovery)
-    assert derive_monitor_status("healthy", uuid4()) == "failing"
-
-    # 5. Check result is failing, and open incident exists -> failing
-    assert derive_monitor_status("failing", uuid4()) == "failing"
+    assert derive_monitor_status(None, uuid4()) == "failing"
+    assert derive_monitor_status(recent, None) == "healthy"
+    assert derive_monitor_status(recent, uuid4()) == "failing"
 
 
 @pytest.mark.asyncio
@@ -150,8 +140,8 @@ async def test_dashboard_aggregates_and_summary(db_session: AsyncSession) -> Non
 
     # Summary verification
     assert dashboard.summary.total_monitors == 4
-    assert dashboard.summary.healthy == 1
-    assert dashboard.summary.failing == 2  # m2 (failed result) and m3 (open incident)
+    assert dashboard.summary.healthy == 2
+    assert dashboard.summary.failing == 1  # m3 has an open incident
     assert dashboard.summary.unknown == 1  # m4 (no results)
     assert dashboard.summary.open_incidents == 1  # inc3
 
@@ -164,8 +154,8 @@ async def test_dashboard_aggregates_and_summary(db_session: AsyncSession) -> Non
 
     # Ordering check: Failing monitors must be listed first
     assert dashboard.monitors[0].status == "failing"
-    assert dashboard.monitors[1].status == "failing"
-    assert dashboard.monitors[2].status == "unknown"
+    assert dashboard.monitors[1].status == "unknown"
+    assert dashboard.monitors[2].status == "healthy"
     assert dashboard.monitors[3].status == "healthy"
 
 

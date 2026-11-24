@@ -3,7 +3,10 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import event, text
 
+from app.core.config import get_settings
+from app.db.session import create_database_engine, get_db_session
 from app.workers.celery_app import celery_app
 from app.workers.failure import (
     TaskFailureTracker,
@@ -22,6 +25,16 @@ from app.workers.tasks import (
 )
 
 
+def test_worker_session_closes_its_database_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "database_url", "sqlite://")
+    engine = create_database_engine()
+    closed = MagicMock()
+    event.listen(engine, "close", closed)
+    with get_db_session(engine) as session:
+        assert session.scalar(text("SELECT 1")) == 1
+    closed.assert_called_once()
+
+
 def test_worker_routes_keep_monitoring_and_side_effects_separate() -> None:
     assert celery_app.conf.task_routes["app.workers.tasks.run_health_check"] == {
         "queue": "monitoring"
@@ -36,6 +49,7 @@ def test_worker_routes_keep_monitoring_and_side_effects_separate() -> None:
 
 
 def test_celery_worker_crash_safety_and_plumbing_configuration() -> None:
+    assert celery_app.conf.worker_concurrency == 2
     # Acks late ensures tasks are acknowledged only after completion
     assert celery_app.conf.task_acks_late is True
     # Rejects and requeues task if worker process is lost/crashes

@@ -1,6 +1,7 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Outlet, Route, Routes } from "react-router-dom";
 
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useCurrentRole } from "./hooks/useCurrentRole";
+import { GuestRoute, ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
@@ -176,30 +177,47 @@ function HomePage() {
         </div>
     );
 }
+function WriteAccess() {
+    const { isLoading, isReadOnly } = useCurrentRole();
+    if (isLoading) return <p role="status">Loading team permissions…</p>;
+    if (isReadOnly)
+        return (
+            <p role="alert">
+                An admin or operator role is required.{" "}
+                <Link to="/dashboard">Back to dashboard</Link>
+            </p>
+        );
+    return <Outlet />;
+}
+
 export function App() {
     return (
         <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route element={<GuestRoute />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+            </Route>
             <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/monitors" element={<MonitorsPage />} />
-                <Route path="/monitors/new" element={<MonitorFormPage />} />
                 <Route
                     path="/monitors/:monitorId"
                     element={<MonitorDetailPage />}
                 />
-                <Route
-                    path="/monitors/:monitorId/edit"
-                    element={<MonitorFormPage />}
-                />
-                <Route path="/channels" element={<ChannelsPage />} />
-                <Route path="/channels/new" element={<ChannelFormPage />} />
-                <Route
-                    path="/channels/:channelId/edit"
-                    element={<ChannelFormPage />}
-                />
+                <Route element={<WriteAccess />}>
+                    <Route path="/monitors/new" element={<MonitorFormPage />} />
+                    <Route
+                        path="/monitors/:monitorId/edit"
+                        element={<MonitorFormPage />}
+                    />
+                    <Route path="/channels" element={<ChannelsPage />} />
+                    <Route path="/channels/new" element={<ChannelFormPage />} />
+                    <Route
+                        path="/channels/:channelId/edit"
+                        element={<ChannelFormPage />}
+                    />
+                </Route>
                 <Route path="/incidents" element={<IncidentsPage />} />
                 <Route
                     path="/incidents/:incidentId"

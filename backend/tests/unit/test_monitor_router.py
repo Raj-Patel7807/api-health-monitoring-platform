@@ -44,6 +44,13 @@ def _make_dummy_monitor(team_id: object = None, monitor_id: object = None) -> Mo
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_monitor_health(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "app.modules.monitors.router.get_monitor_health", AsyncMock(return_value="healthy")
+    )
+
+
 @pytest.fixture()
 def mock_team_context() -> TeamContext:
     user = User(

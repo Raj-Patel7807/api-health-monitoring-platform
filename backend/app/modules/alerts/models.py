@@ -25,7 +25,7 @@ class AlertDelivery(Base):
     """One alert delivery attempt per (incident, channel, event_type).
 
     The unique constraint (incident_id, notification_channel_id, event_type)
-    provides the idempotency key — the Celery task will only send if status == 'pending'.
+    identifies each event. The worker commits an exclusive claim before contacting a provider.
     Secrets are NEVER stored here; error_message must be sanitized before storage.
     """
 
@@ -47,16 +47,27 @@ class AlertDelivery(Base):
         Uuid, ForeignKey("notification_channels.id", ondelete="CASCADE"), nullable=False
     )
     event_type: Mapped[str] = mapped_column(
-        Enum(DeliveryEventType, name="delivery_event_type", create_type=False),
+        Enum(
+            DeliveryEventType,
+            values_callable=lambda cls: [e.value for e in cls],
+            name="delivery_event_type",
+            create_type=False,
+        ),
         nullable=False,
         default=DeliveryEventType.OPENED,
     )
     status: Mapped[str] = mapped_column(
-        Enum(DeliveryStatus, name="delivery_status", create_type=False),
+        Enum(
+            DeliveryStatus,
+            values_callable=lambda cls: [e.value for e in cls],
+            name="delivery_status",
+            create_type=False,
+        ),
         nullable=False,
         default=DeliveryStatus.PENDING,
     )
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempt_started_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTimeUTC, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

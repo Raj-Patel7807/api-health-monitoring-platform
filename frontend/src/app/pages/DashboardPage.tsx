@@ -22,6 +22,7 @@ import type {
     DashboardSummary,
 } from "../../lib/dashboardApi";
 import type { MonitorHealthStatus } from "../../lib/dashboard";
+import { useCurrentRole } from "../hooks/useCurrentRole";
 import { AppNav } from "../components/AppNav";
 import "./dashboard.css";
 
@@ -203,6 +204,7 @@ function SummaryCards({ summary }: SummaryCardsProps) {
 type MonitorTableProps = { rows: DashboardMonitorRow[] };
 
 function MonitorTable({ rows }: MonitorTableProps) {
+    const { isReadOnly } = useCurrentRole();
     if (rows.length === 0) {
         return (
             <div className="dashboard-state-box" data-testid="empty-state">
@@ -211,13 +213,15 @@ function MonitorTable({ rows }: MonitorTableProps) {
                 </span>
                 <h2>No monitors yet</h2>
                 <p>Start tracking your endpoints to see their health here.</p>
-                <Link
-                    to="/monitors/new"
-                    className="dashboard-button dashboard-button--primary"
-                    data-testid="add-first-monitor-link"
-                >
-                    Add your first monitor
-                </Link>
+                {!isReadOnly && (
+                    <Link
+                        to="/monitors/new"
+                        className="dashboard-button dashboard-button--primary"
+                        data-testid="add-first-monitor-link"
+                    >
+                        Add your first monitor
+                    </Link>
+                )}
             </div>
         );
     }

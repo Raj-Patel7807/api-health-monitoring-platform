@@ -289,6 +289,14 @@
     background: var(--clr-bg-elevated);
 }
 
+.app-nav-logout {
+    margin-inline-start: auto;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+}
+
 .app-nav-link--active {
     color: var(--clr-accent);
     background: var(--clr-accent-soft);

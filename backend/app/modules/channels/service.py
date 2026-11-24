@@ -1,6 +1,5 @@
 """Database service functions for notification channel lifecycle (US-03)."""
 
-import json
 import logging
 from datetime import UTC, datetime
 from uuid import UUID
@@ -49,7 +48,7 @@ async def create_channel(
         type=data.type.value,
         name=data.name,
         is_enabled=True,
-        configuration=json.dumps(data.configuration),
+        configuration=data.configuration,  # dict — column is JSON/JSONB
         secret_ref=encrypted_secret,
         secret_display_hint=hint,
         created_at=now,
@@ -118,7 +117,7 @@ async def update_channel(
     if data.is_enabled is not None:
         channel.is_enabled = data.is_enabled
     if data.configuration is not None:
-        channel.configuration = json.dumps(data.configuration)
+        channel.configuration = data.configuration  # dict — column is JSON/JSONB
     if data.secret_value is not None:
         # Validate new secret against the channel's original type (type cannot change).
         channel_type = ChannelType(channel_type_str)

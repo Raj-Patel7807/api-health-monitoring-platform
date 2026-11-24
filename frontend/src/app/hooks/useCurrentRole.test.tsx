@@ -134,16 +134,32 @@ describe("useCurrentRole", () => {
         expect(result.current.isReadOnly).toBe(true);
     });
 
-    it("defaults to admin if not logged in", () => {
+    it("keeps write controls hidden while the profile loads and when it is unavailable", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockRejectedValue(new Error("Profile unavailable")),
+        );
+        const { result } = renderHook(() => useCurrentRole(), {
+            wrapper: createWrapper(),
+        });
+        expect(result.current.isReadOnly).toBe(true);
+        await waitFor(() => expect(result.current.isError).toBe(true), {
+            timeout: 3000,
+        });
+        expect(result.current.isAdmin).toBe(false);
+        expect(result.current.isReadOnly).toBe(true);
+    });
+
+    it("defaults to read_only if not logged in", () => {
         localStorage.clear();
 
         const { result } = renderHook(() => useCurrentRole(), {
             wrapper: createWrapper(),
         });
 
-        expect(result.current.role).toBe("admin");
-        expect(result.current.isAdmin).toBe(true);
-        expect(result.current.isReadOnly).toBe(false);
+        expect(result.current.role).toBe("read_only");
+        expect(result.current.isAdmin).toBe(false);
+        expect(result.current.isReadOnly).toBe(true);
         expect(result.current.isLoading).toBe(false);
     });
 });

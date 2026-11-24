@@ -417,16 +417,71 @@
     margin-top: var(--space-2);
 }
 
-/* ── Screen-reader utility ────────────────────────────────────────────────── */
+/* ── Importer UI styles ─────────────────────────────────────────────────── */
 
-.monitors-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+.importer-panel {
+    background: var(--clr-bg-subtle, #1a2234);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+}
+
+.importer-dropzone {
+    border: 2px dashed var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: var(--space-4);
+}
+
+.importer-dropzone:hover {
+    border-color: var(--clr-accent);
+}
+
+.importer-dropzone-input {
+    margin-top: var(--space-2);
+}
+
+.importer-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-4);
+    font-size: 0.875rem;
+}
+
+.importer-preview-table th,
+.importer-preview-table td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.importer-preview-input {
+    background: var(--clr-bg-input, #0f172a);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    color: var(--clr-text-primary);
+    padding: var(--space-1) var(--space-2);
+    width: 100%;
+    font-size: 0.85rem;
+}
+
+.importer-badge-valid {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.importer-badge-invalid {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
 }

@@ -10,6 +10,7 @@
  * - "leave blank to keep" note shown in edit mode
  */
 
+import { mockAdminProfile } from "../../test/mockAdminProfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -180,10 +181,12 @@ function renderApp(initialEntry: string, mockFetch: ReturnType<typeof vi.fn>) {
 
 describe("ChannelFormPage — create mode", () => {
     beforeEach(() => {
+        mockAdminProfile();
         localStorage.setItem("access_token", "test-token");
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
     });
@@ -313,12 +316,14 @@ describe("ChannelFormPage — create mode", () => {
 
 describe("ChannelsPage — role-aware controls and delete flow", () => {
     beforeEach(() => {
+        mockAdminProfile();
         localStorage.setItem("access_token", "test-token");
         HTMLDialogElement.prototype.showModal = vi.fn();
         HTMLDialogElement.prototype.close = vi.fn();
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
     });
@@ -375,28 +380,12 @@ describe("ChannelsPage — role-aware controls and delete flow", () => {
             role: "read_only",
             isReadOnly: true,
         });
-        const mockChannel = {
-            id: "chan-1",
-            type: "slack",
-            name: "Production Alerts",
-            monitor_id: null,
-            is_enabled: true,
-            secret_display_hint: "hooks.slack.com/…/XYZ",
-            configuration: {},
-            created_at: "2026-10-01T10:00:00Z",
-            updated_at: "2026-10-01T10:00:00Z",
-        };
-        const mockFetch = vi.fn().mockResolvedValue(
-            new Response(JSON.stringify({ items: [mockChannel] }), {
-                status: 200,
-            }),
-        );
+        const mockFetch = vi.fn();
         renderApp("/channels", mockFetch);
-
-        expect(
-            await screen.findByText("Production Alerts"),
-        ).toBeInTheDocument();
-
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "admin or operator",
+        );
+        expect(mockFetch).not.toHaveBeenCalled();
         // No Add channel button
         expect(screen.queryByTestId("add-channel-btn")).toBeNull();
         // No Delete button

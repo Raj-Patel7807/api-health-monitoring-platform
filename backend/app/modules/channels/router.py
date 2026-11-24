@@ -15,6 +15,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic_core import PydanticCustomError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import TeamRole
@@ -109,11 +110,15 @@ async def update_channel(
         )
 
     if body.secret_value is not None:
-        # Re-validate the new secret against the channel's existing type
+        # Re-validate the new secret against the channel's existing type.
+        # Wrap PydanticCustomError so a bad URL returns 422 (not 500).
         from app.modules.channels.models import ChannelType
         from app.modules.channels.schemas import _validate_secret
 
-        _validate_secret(ChannelType(channel.type), body.secret_value)
+        try:
+            body.secret_value = _validate_secret(ChannelType(channel.type), body.secret_value)
+        except PydanticCustomError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from None
 
     updated = await service.update_channel(db, channel, body, channel.type)
     return ChannelResponse.model_validate(updated)

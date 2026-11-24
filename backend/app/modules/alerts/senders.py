@@ -1,4 +1,4 @@
-"""Alert senders for US-11 (B5): common interface, Slack, Discord.
+"""Alert senders for US-11 (B5): Slack, Discord, SMTP and generic HTTPS webhooks.
 
 Security rules (enforced here):
 - The secret is decrypted ONLY inside the send function (never before, never stored).
@@ -38,6 +38,7 @@ def _format_message(
     event_type: str,
     checked_at: datetime,
     failure_reason: str | None,
+    ai_diagnosis: str | None = None,
 ) -> str:
     """Format the alert text shared by all senders."""
     tag = "[OPENED]" if event_type == "opened" else "[RESOLVED]"
@@ -45,6 +46,8 @@ def _format_message(
     line = f"{tag} {monitor_name} ({monitor_url}) \u2014 {ts}"
     if event_type == "opened" and failure_reason:
         line += f"\nReason: {failure_reason}"
+    if event_type == "opened" and ai_diagnosis:
+        line += f"\nAI Advisory Diagnosis: {ai_diagnosis}"
     return line
 
 
@@ -57,6 +60,7 @@ class AlertMessage:
     event_type: str  # "opened" | "resolved"
     checked_at: datetime
     failure_reason: str | None = None
+    ai_diagnosis: str | None = None
 
 
 class AlertSender(abc.ABC):
@@ -91,6 +95,7 @@ class SlackSender(AlertSender):
             event_type=message.event_type,
             checked_at=message.checked_at,
             failure_reason=message.failure_reason,
+            ai_diagnosis=message.ai_diagnosis,
         )
         try:
             with httpx.Client(timeout=5.0) as client:
@@ -126,6 +131,7 @@ class DiscordSender(AlertSender):
             event_type=message.event_type,
             checked_at=message.checked_at,
             failure_reason=message.failure_reason,
+            ai_diagnosis=message.ai_diagnosis,
         )
         try:
             with httpx.Client(timeout=5.0) as client:
@@ -145,11 +151,30 @@ class DiscordSender(AlertSender):
             webhook_url = ""  # noqa: F841  # type: ignore[assignment]
 
 
+class EmailSender(AlertSender):
+    def send(self, channel: object, message: AlertMessage) -> None:
+        from app.core.crypto import decrypt
+        from app.services.email_sender import send_email
+
+        recipient = decrypt(channel.secret_ref)  # type: ignore[attr-defined]
+        subject = f"[{message.event_type.upper()}] {message.monitor_name}"
+        send_email(recipient, " ".join(subject.splitlines()), _format_message(**vars(message)))
+
+
+class WebhookSender(AlertSender):
+    def send(self, channel: object, message: AlertMessage) -> None:
+        from app.core.crypto import decrypt
+        from app.services.webhook_sender import send_webhook
+
+        url = decrypt(channel.secret_ref)  # type: ignore[attr-defined]
+        send_webhook(url, {**vars(message), "checked_at": message.checked_at.isoformat()})
+
+
 def get_sender(channel_type: str) -> AlertSender:
     """Factory: return the appropriate AlertSender for the given channel type.
 
     Args:
-        channel_type: One of "slack", "discord".
+        channel_type: A configured notification channel type.
 
     Raises:
         ValueError: For unsupported channel types.
@@ -157,6 +182,8 @@ def get_sender(channel_type: str) -> AlertSender:
     _registry: dict[str, AlertSender] = {
         "slack": SlackSender(),
         "discord": DiscordSender(),
+        "webhook": WebhookSender(),
+        "email": EmailSender(),
     }
     sender = _registry.get(channel_type)
     if sender is None:

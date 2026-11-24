@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from app.modules.alerts.dispatcher import create_delivery_rows, pick_channels
 from app.modules.incidents.hooks import schedule_incident_resolved_hook
 from app.modules.incidents.models import (
     Incident,
@@ -124,11 +125,6 @@ def process_monitor_failure(
             session.add(incident)
             session.flush()
 
-        # If flush succeeded, this is a newly opened incident.
-        # Schedule post-commit hooks to fire after the transaction successfully commits.
-        _schedule_incident_opened_hooks(session, incident)
-        return incident
-
     except IntegrityError:
         # Another concurrent worker created an open incident at the same moment.
         # The savepoint automatically rolled back, keeping session clean.
@@ -168,6 +164,12 @@ def process_monitor_failure(
 
         # Edge case: if the conflicting incident was somehow resolved instantly
         return None
+
+    create_delivery_rows(
+        session, incident.id, pick_channels(session, monitor.id, monitor.team_id), "opened"
+    )
+    _schedule_incident_opened_hooks(session, incident)
+    return incident
 
 
 def _schedule_incident_opened_hooks(session: Session, incident: Incident) -> None:
@@ -236,6 +238,12 @@ def process_incident_state_transition(
             reset_monitor_backoff(monitor, now=now)
 
             # Schedule post-commit hook for B5
+            create_delivery_rows(
+                session,
+                open_incident.id,
+                pick_channels(session, monitor.id, monitor.team_id),
+                "resolved",
+            )
             schedule_incident_resolved_hook(session, open_incident.id)
 
             logger.info(

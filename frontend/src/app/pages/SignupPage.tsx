@@ -19,7 +19,12 @@ export function SignupPage() {
         setError(null);
         setLoading(true);
         try {
-            await signup(fullName, email, password, teamName || "My Team");
+            await signup(
+                fullName,
+                email,
+                password,
+                teamName.trim() || undefined,
+            );
             // API.md: 201 returns tokens — if they were saved go straight to monitors
             if (getAccessToken()) {
                 navigate("/monitors");

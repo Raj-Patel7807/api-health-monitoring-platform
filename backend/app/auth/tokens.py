@@ -38,7 +38,7 @@ def _build_token(
         str,
         jwt.encode(
             payload,
-            settings.jwt_secret_key,
+            settings.signing_key(),
             algorithm=settings.jwt_algorithm,
         ),
     )
@@ -70,7 +70,7 @@ def _decode_raw(token: str) -> dict[str, Any]:
             dict[str, Any],
             jwt.decode(
                 token,
-                settings.jwt_secret_key,
+                settings.signing_key(),
                 algorithms=[settings.jwt_algorithm],
             ),
         )

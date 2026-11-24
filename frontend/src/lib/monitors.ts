@@ -50,6 +50,7 @@ export const MONITOR_LIMITS = {
 } as const;
 
 export type Monitor = {
+    health_status?: "healthy" | "failing" | "unknown";
     id: string;
     name: string;
     url: string;
@@ -148,7 +149,7 @@ export const DEFAULT_FORM_VALUES: MonitorFormValues = {
     name: "",
     url: "",
     method: "GET",
-    check_interval_seconds: "60",
+    check_interval_seconds: "30",
     timeout_seconds: "10",
     expected_status_code: "200",
     failure_threshold: "3",

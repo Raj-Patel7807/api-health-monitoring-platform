@@ -100,69 +100,79 @@ describe("MonitorsPage — role-aware controls (US-19)", () => {
         // Actions column header must NOT be present
         expect(screen.queryByText("Actions")).not.toBeInTheDocument();
 
+        expect(
+            screen.queryByRole("link", { name: /channels/i }),
+        ).not.toBeInTheDocument();
         // AppNav Members link must NOT be present for read_only
         expect(
             screen.queryByRole("link", { name: /members/i }),
         ).not.toBeInTheDocument();
     });
 
-    it("admin user sees Add monitor button, Edit links, Delete buttons, and Members link in nav", async () => {
-        vi.spyOn(roleHook, "useCurrentRole").mockReturnValue({
-            role: "admin",
-            isAdmin: true,
-            isOperator: false,
-            isReadOnly: false,
-            isLoading: false,
-            isError: false,
-            error: null,
-            refetch: vi.fn(),
-        });
+    it.each(["admin", "operator"] as const)(
+        "%s sees write controls consistent with the API",
+        async (role) => {
+            vi.spyOn(roleHook, "useCurrentRole").mockReturnValue({
+                role,
+                isAdmin: role === "admin",
+                isOperator: role === "operator",
+                isReadOnly: false,
+                isLoading: false,
+                isError: false,
+                error: null,
+                refetch: vi.fn(),
+            });
 
-        vi.stubGlobal(
-            "fetch",
-            vi.fn().mockImplementation((url: string) => {
-                if (url.includes("/api/v1/monitors")) {
-                    return Promise.resolve(
-                        new Response(
-                            JSON.stringify({
-                                items: mockMonitors,
-                                total: 1,
-                                page: 1,
-                                page_size: 20,
-                            }),
-                            {
-                                status: 200,
-                                headers: { "Content-Type": "application/json" },
-                            },
-                        ),
-                    );
-                }
-                return Promise.reject(new Error(`Unexpected url: ${url}`));
-            }),
-        );
+            vi.stubGlobal(
+                "fetch",
+                vi.fn().mockImplementation((url: string) => {
+                    if (url.includes("/api/v1/monitors")) {
+                        return Promise.resolve(
+                            new Response(
+                                JSON.stringify({
+                                    items: mockMonitors,
+                                    total: 1,
+                                    page: 1,
+                                    page_size: 20,
+                                }),
+                                {
+                                    status: 200,
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                },
+                            ),
+                        );
+                    }
+                    return Promise.reject(new Error(`Unexpected url: ${url}`));
+                }),
+            );
 
-        renderMonitorsPage();
+            renderMonitorsPage();
 
-        expect(
-            await screen.findByRole("heading", { name: "Monitors" }),
-        ).toBeInTheDocument();
-        expect(
-            await screen.findByText("Production Gateway"),
-        ).toBeInTheDocument();
+            expect(
+                await screen.findByRole("heading", { name: "Monitors" }),
+            ).toBeInTheDocument();
+            expect(
+                await screen.findByText("Production Gateway"),
+            ).toBeInTheDocument();
 
-        // Add monitor button must be present
-        expect(screen.getByTestId("add-monitor-btn")).toBeInTheDocument();
+            // Add monitor button must be present
+            expect(screen.getByTestId("add-monitor-btn")).toBeInTheDocument();
 
-        // Edit link and Delete button must be present
-        expect(screen.getByText("Edit")).toBeInTheDocument();
-        expect(screen.getByTestId("delete-mon-1")).toBeInTheDocument();
+            // Edit link and Delete button must be present
+            expect(screen.getByText("Edit")).toBeInTheDocument();
+            expect(Boolean(screen.queryByTestId("delete-mon-1"))).toBe(
+                role === "admin",
+            );
 
-        // Actions column header must be present
-        expect(screen.getByText("Actions")).toBeInTheDocument();
+            // Actions column header must be present
+            expect(screen.getByText("Actions")).toBeInTheDocument();
 
-        // AppNav Members link must be present for admin
-        expect(
-            screen.getByRole("link", { name: /members/i }),
-        ).toBeInTheDocument();
-    });
+            // AppNav Members link must be present for admin
+            expect(
+                screen.getByRole("link", { name: /members/i }),
+            ).toBeInTheDocument();
+        },
+    );
 });

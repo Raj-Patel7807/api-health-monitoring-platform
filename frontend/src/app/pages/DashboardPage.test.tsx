@@ -12,6 +12,7 @@
  *  - Error state with retry button
  */
 
+import { mockAdminProfile } from "../../test/mockAdminProfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -124,10 +125,12 @@ function stubFetch(
 
 describe("DashboardPage", () => {
     beforeEach(() => {
+        mockAdminProfile();
         localStorage.setItem("access_token", "test-token");
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
     });

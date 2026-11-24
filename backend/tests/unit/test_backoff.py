@@ -1,6 +1,7 @@
 """Unit tests for exponential backoff, recovery, and User-Agent header (US-16)."""
 
 import socket
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 from uuid import uuid4
@@ -159,6 +160,7 @@ def test_update_monitor_backoff_delegates_correctly(sample_monitor: Monitor) -> 
     fixed_now = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
 
     # 1. Failure outcome
+    sample_monitor.failure_threshold = 1
     sample_monitor.consecutive_failures = 1
     update_monitor_backoff(sample_monitor, is_healthy=False, now=fixed_now)
     assert sample_monitor.current_interval_seconds == 120
@@ -186,7 +188,7 @@ def test_execute_http_check_transmits_configured_user_agent() -> None:
             captured_headers.update(headers)
         return httpx.Response(status_code=200, request=httpx.Request("GET", url))
 
-    with patch("httpx.Client.request", side_effect=fake_request):
+    with patch("httpx.Client.stream", side_effect=lambda *a, **kw: closing(fake_request(*a, **kw))):
         execute_http_check(
             url="https://api.example.com",
             method="GET",
@@ -216,7 +218,7 @@ def test_check_monitor_by_id_uses_default_user_agent_when_missing(
             captured_headers.update(headers)
         return httpx.Response(status_code=200, request=httpx.Request("GET", url))
 
-    with patch("httpx.Client.request", side_effect=fake_request):
+    with patch("httpx.Client.stream", side_effect=lambda *a, **kw: closing(fake_request(*a, **kw))):
         check_monitor_by_id(str(sample_monitor.id), db_session=in_memory_db)
 
     assert captured_headers.get("User-Agent") == DEFAULT_USER_AGENT
@@ -233,13 +235,11 @@ def test_check_monitor_repeated_failures_and_recovery(
     """Simulate consecutive failures causing backoff escalation followed by recovery reset."""
     fixed_time = datetime(2026, 10, 14, 10, 0, 0, tzinfo=UTC)
 
-    # 1. First failure -> current_interval = 120
+    # 1. First failure -> stays at the configured interval
     with (
         patch(
-            "httpx.Client.request",
-            return_value=httpx.Response(
-                status_code=500, request=httpx.Request("GET", sample_monitor.url)
-            ),
+            "httpx.Client.stream",
+            return_value=closing(httpx.Response(status_code=500, stream=httpx.ByteStream(b""))),
         ),
         patch("app.modules.monitors.backoff.datetime") as mock_dt,
     ):
@@ -251,16 +251,14 @@ def test_check_monitor_repeated_failures_and_recovery(
     assert res1.status == "failing"
     in_memory_db.refresh(sample_monitor)
     assert sample_monitor.consecutive_failures == 1
-    assert sample_monitor.current_interval_seconds == 120
-    assert sample_monitor.backoff_until == fixed_time + timedelta(seconds=120)
+    assert sample_monitor.current_interval_seconds == 60
+    assert sample_monitor.backoff_until is None
 
-    # 2. Second failure -> current_interval = 240
+    # 2. Second failure -> stays at the configured interval
     with (
         patch(
-            "httpx.Client.request",
-            return_value=httpx.Response(
-                status_code=500, request=httpx.Request("GET", sample_monitor.url)
-            ),
+            "httpx.Client.stream",
+            return_value=closing(httpx.Response(status_code=500, stream=httpx.ByteStream(b""))),
         ),
         patch("app.modules.monitors.backoff.datetime") as mock_dt,
     ):
@@ -272,16 +270,14 @@ def test_check_monitor_repeated_failures_and_recovery(
     assert res2.status == "failing"
     in_memory_db.refresh(sample_monitor)
     assert sample_monitor.consecutive_failures == 2
-    assert sample_monitor.current_interval_seconds == 240
-    assert sample_monitor.backoff_until == fixed_time + timedelta(seconds=240)
+    assert sample_monitor.current_interval_seconds == 60
+    assert sample_monitor.backoff_until is None
 
     # 3. Third failure -> current_interval = 480
     with (
         patch(
-            "httpx.Client.request",
-            return_value=httpx.Response(
-                status_code=500, request=httpx.Request("GET", sample_monitor.url)
-            ),
+            "httpx.Client.stream",
+            return_value=closing(httpx.Response(status_code=500, stream=httpx.ByteStream(b""))),
         ),
         patch("app.modules.monitors.backoff.datetime") as mock_dt,
     ):
@@ -298,10 +294,8 @@ def test_check_monitor_repeated_failures_and_recovery(
 
     # 4. Successful recovery check -> resets to check_interval_seconds (60) and clears backoff_until
     with patch(
-        "httpx.Client.request",
-        return_value=httpx.Response(
-            status_code=200, request=httpx.Request("GET", sample_monitor.url)
-        ),
+        "httpx.Client.stream",
+        return_value=closing(httpx.Response(status_code=200, stream=httpx.ByteStream(b""))),
     ):
         res_ok = check_monitor_by_id(str(sample_monitor.id), db_session=in_memory_db)
 
@@ -336,7 +330,9 @@ def test_scheduler_respects_active_backoff_and_schedules_after_expiration(
 
     dispatched: list[str] = []
     queued = find_and_schedule_due_monitors(
-        session=in_memory_db, now=now, task_dispatcher=dispatched.append
+        session=in_memory_db,
+        now=now,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert queued == []
@@ -348,7 +344,9 @@ def test_scheduler_respects_active_backoff_and_schedules_after_expiration(
     in_memory_db.commit()
 
     queued = find_and_schedule_due_monitors(
-        session=in_memory_db, now=now, task_dispatcher=dispatched.append
+        session=in_memory_db,
+        now=now,
+        task_dispatcher=lambda monitor_id, check_id: dispatched.append(monitor_id),
     )
 
     assert queued == [str(sample_monitor.id)]
@@ -367,14 +365,16 @@ def test_overlapping_checks_calculate_backoff_from_atomic_counter(
     """
     other_session = Session(in_memory_db.get_bind())
     try:
+        sample_monitor.failure_threshold = 1
+        in_memory_db.commit()
         stale = other_session.get(Monitor, sample_monitor.id)
         assert stale is not None
         assert stale.consecutive_failures == 0
 
         with patch(
-            "httpx.Client.request",
-            return_value=httpx.Response(
-                status_code=500, request=httpx.Request("GET", sample_monitor.url)
+            "httpx.Client.stream",
+            side_effect=lambda *args, **kwargs: closing(
+                httpx.Response(500, stream=httpx.ByteStream(b""))
             ),
         ):
             first = check_monitor_by_id(str(sample_monitor.id), db_session=in_memory_db)

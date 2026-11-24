@@ -53,7 +53,7 @@ def _make_dummy_channel(
         type=channel_type,
         name=name,
         is_enabled=is_enabled,
-        configuration="{}",
+        configuration={},
         secret_ref="encrypted-token-blob",
         secret_display_hint=secret_display_hint,
         created_at=_NOW,

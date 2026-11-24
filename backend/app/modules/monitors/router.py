@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import TeamMembership, TeamRole
 from app.db.session import get_db
 from app.integrations.llm.extractor import extract_endpoints_from_markdown
+from app.modules.dashboard.service import get_monitor_health
 from app.modules.monitors import service
 from app.modules.monitors.dependencies import (
     TeamContext,
@@ -104,7 +105,9 @@ async def get_monitor(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Monitor not found.",
         )
-    return MonitorDetailResponse.model_validate(monitor)
+    detail = MonitorDetailResponse.model_validate(monitor)
+    detail.health_status = await get_monitor_health(db, monitor.id)
+    return detail
 
 
 @router.get(
@@ -170,7 +173,9 @@ async def update_monitor(
             detail="Monitor not found.",
         )
     updated = await service.update_monitor(db, monitor, body)
-    return MonitorDetailResponse.model_validate(updated)
+    detail = MonitorDetailResponse.model_validate(updated)
+    detail.health_status = await get_monitor_health(db, updated.id)
+    return detail
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

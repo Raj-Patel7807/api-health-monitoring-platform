@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+/aiven-certs/
+.vercel/
 tmp/
 
 # Python
@@ -18,6 +20,7 @@ htmlcov/
 # Node and frontend build output
 node_modules/
 dist/
+coverage/
 playwright-report/
 test-results/
 

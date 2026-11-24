@@ -12,12 +12,12 @@ Covers:
 - decrypting stored secret_ref yields original secret; tampered secret_ref fails
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import DecryptionError, EncryptionConfigError, decrypt, generate_key
 from app.modules.channels import service
@@ -44,7 +44,7 @@ async def test_create_channel_encrypts_secret_and_stores_hint() -> None:
         secret_value="https://hooks.slack.com/services/T00/B00/SECRET123",
     )
 
-    db = AsyncMock()
+    db = AsyncMock(spec=AsyncSession)
     added_channel: NotificationChannel | None = None
 
     def fake_add(instance: object) -> None:
@@ -216,7 +216,7 @@ async def test_update_channel_rotates_secret_when_provided() -> None:
 
     assert decrypt(updated.secret_ref) == new_secret
     assert "RET" in updated.secret_display_hint
-    assert json.loads(updated.configuration) == {"timeout": 5}
+    assert updated.configuration == {"timeout": 5}
 
 
 @pytest.mark.asyncio
