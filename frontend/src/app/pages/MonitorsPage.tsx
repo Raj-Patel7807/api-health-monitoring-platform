@@ -12,6 +12,7 @@ import type { Monitor } from "../../lib/monitors";
 import { useCurrentRole } from "../hooks/useCurrentRole";
 import { AppNav } from "../components/AppNav";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ImportMarkdownModal } from "../components/ImportMarkdownModal";
 import { ToastContainer } from "../components/Toast";
 import { useToast } from "../components/useToast";
 import "./monitors.css";
@@ -35,6 +36,7 @@ export function MonitorsPage() {
 
     // ID of the monitor the user wants to delete (null = dialog closed)
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const rawPage = parseInt(searchParams.get("page") ?? "1", 10);
     const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
@@ -96,13 +98,29 @@ export function MonitorsPage() {
                         </p>
                     </div>
                     {!isReadOnly && (
-                        <Link
-                            to="/monitors/new"
-                            className="monitors-button monitors-button--primary"
-                            data-testid="add-monitor-btn"
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "0.75rem",
+                                alignItems: "center",
+                            }}
                         >
-                            Add monitor
-                        </Link>
+                            <button
+                                type="button"
+                                className="monitors-button monitors-button--secondary"
+                                onClick={() => setIsImportModalOpen(true)}
+                                data-testid="import-markdown-btn"
+                            >
+                                🤖 Import with AI
+                            </button>
+                            <Link
+                                to="/monitors/new"
+                                className="monitors-button monitors-button--primary"
+                                data-testid="add-monitor-btn"
+                            >
+                                Add monitor
+                            </Link>
+                        </div>
                     )}
                 </header>
 
@@ -318,6 +336,21 @@ export function MonitorsPage() {
 
             {/* Toast notifications */}
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+            {/* AI Markdown Import Modal */}
+            <ImportMarkdownModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={(count) => {
+                    void queryClient.invalidateQueries({
+                        queryKey: ["monitors"],
+                    });
+                    addToast(
+                        `${count} monitor${count > 1 ? "s" : ""} imported successfully!`,
+                        "success",
+                    );
+                }}
+            />
         </>
     );
 }

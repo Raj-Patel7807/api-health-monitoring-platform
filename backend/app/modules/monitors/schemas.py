@@ -181,3 +181,40 @@ class MonitorListResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+
+class MarkdownExtractRequest(BaseModel):
+    markdown_content: str = Field(
+        ..., min_length=1, description="Raw markdown content or API documentation"
+    )
+    base_url: str | None = Field(
+        default=None, description="Optional base URL to resolve relative endpoints against"
+    )
+
+
+class ExtractedEndpointItem(BaseModel):
+    name: str = Field(..., min_length=1, max_length=150)
+    method: HttpMethod = Field(default=HttpMethod.GET)
+    url: str = Field(..., max_length=2048)
+    expected_status_code: int = Field(default=200, ge=100, le=599)
+    timeout_seconds: int = Field(default=10, gt=0, le=300)
+    check_interval_seconds: int = Field(default=60, gt=0, le=86400)
+    failure_threshold: int = Field(default=3, gt=0, le=100)
+    recovery_threshold: int = Field(default=2, gt=0, le=100)
+    description: str | None = None
+
+
+class MarkdownExtractResponse(BaseModel):
+    endpoints: list[ExtractedEndpointItem]
+    total_found: int
+    warnings: list[str] = []
+    used_llm: bool = False
+
+
+class MonitorBatchCreateRequest(BaseModel):
+    monitors: list[MonitorCreateRequest] = Field(..., min_length=1, max_length=100)
+
+
+class MonitorBatchCreateResponse(BaseModel):
+    created: list[MonitorDetailResponse]
+    count: int

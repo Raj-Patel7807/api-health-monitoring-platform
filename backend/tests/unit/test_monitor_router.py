@@ -525,3 +525,61 @@ async def test_get_monitor_results_rejects_page_size_over_100(
     assert response.status_code == 422
 
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_ai_extract_endpoint(mock_team_context: TeamContext) -> None:
+    app.dependency_overrides[require_monitor_write] = lambda: mock_team_context
+
+    sample_md = "# APIs\n### `GET /api/v1/health`\nReturns 200 OK."
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        response = await ac.post(
+            "/api/v1/monitors/ai-extract",
+            json={"markdown_content": sample_md, "base_url": "https://api.acme.com"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_found"] >= 1
+    assert data["endpoints"][0]["method"] == "GET"
+    assert data["endpoints"][0]["url"] == "https://api.acme.com/api/v1/health"
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_batch_create_monitors_endpoint(mock_team_context: TeamContext) -> None:
+    app.dependency_overrides[require_monitor_write] = lambda: mock_team_context
+    mock_db = AsyncMock()
+    app.dependency_overrides[get_db] = lambda: mock_db
+
+    dummy_m1 = _make_dummy_monitor(mock_team_context.team.id)
+    dummy_m2 = _make_dummy_monitor(mock_team_context.team.id)
+
+    with patch(
+        "app.modules.monitors.service.create_monitors_batch",
+        new=AsyncMock(return_value=[dummy_m1, dummy_m2]),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as ac:
+            response = await ac.post(
+                "/api/v1/monitors/batch",
+                json={
+                    "monitors": [
+                        {"name": "M1", "url": "https://api.acme.com/1", "method": "GET"},
+                        {"name": "M2", "url": "https://api.acme.com/2", "method": "POST"},
+                    ]
+                },
+            )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["count"] == 2
+        assert len(data["created"]) == 2
+
+    app.dependency_overrides.clear()

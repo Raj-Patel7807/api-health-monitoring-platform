@@ -153,3 +153,40 @@ async def soft_delete_monitor(
     monitor.enabled = False
     monitor.updated_at = now
     await db.flush()
+
+
+async def create_monitors_batch(
+    db: AsyncSession,
+    team_id: UUID,
+    monitors_data: list[MonitorCreateRequest],
+) -> list[Monitor]:
+    """Bulk create and persist multiple Monitors scoped to *team_id*."""
+    created_monitors: list[Monitor] = []
+    now = datetime.now(UTC)
+    for data in monitors_data:
+        monitor = Monitor(
+            team_id=team_id,
+            name=data.name,
+            url=data.url,
+            method=data.method.value,
+            enabled=data.enabled,
+            check_interval_seconds=data.check_interval_seconds,
+            current_interval_seconds=data.check_interval_seconds,
+            timeout_seconds=data.timeout_seconds,
+            failure_threshold=data.failure_threshold,
+            recovery_threshold=data.recovery_threshold,
+            consecutive_failures=0,
+            consecutive_successes=0,
+            expected_status_code=data.expected_status_code,
+            user_agent=data.user_agent,
+            next_check_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(monitor)
+        created_monitors.append(monitor)
+
+    await db.flush()
+    for m in created_monitors:
+        await db.refresh(m)
+    return created_monitors

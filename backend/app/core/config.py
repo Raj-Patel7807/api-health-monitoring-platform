@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     # Test harness token
     harness_token: str = "testtoken"
     llm_enabled: bool = False
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash-lite"
 
     # Base64url-encoded 32-byte AES-256 key. Generate: python -m app.core.crypto
     # No default on purpose: a shared default key would defeat the encryption.
