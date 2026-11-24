@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from app.db.session import get_db_session
 from app.modules.monitors.checker import check_monitor_by_id
 from app.modules.monitors.models import Monitor
@@ -49,9 +48,11 @@ def main() -> None:
             print()
 
         print("-" * 60)
-        print(
-            f"Summary: {len(monitors)} checked | {healthy_count} Healthy | {failing_count} Failing\n"
+        summary = (
+            f"Summary: {len(monitors)} checked | "
+            f"{healthy_count} Healthy | {failing_count} Failing\n"
         )
+        print(summary)
 
 
 if __name__ == "__main__":
