@@ -20,7 +20,7 @@ export function ImportMarkdownModal({
 }: ImportMarkdownModalProps) {
     const [step, setStep] = useState<1 | 2>(1);
     const [markdownContent, setMarkdownContent] = useState("");
-    const [baseUrl, setBaseUrl] = useState("http://localhost:8000");
+    const [baseUrl, setBaseUrl] = useState("");
     const [fileName, setFileName] = useState<string | null>(null);
 
     const [isExtracting, setIsExtracting] = useState(false);
@@ -241,7 +241,7 @@ export function ImportMarkdownModal({
                                     className="import-md-input"
                                     value={baseUrl}
                                     onChange={(e) => setBaseUrl(e.target.value)}
-                                    placeholder="https://api.example.com or http://localhost:8000"
+                                    placeholder="https://api.example.com"
                                 />
                                 <span className="import-md-hint">
                                     Prepend this domain if your markdown uses
