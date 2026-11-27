@@ -86,12 +86,12 @@
 }
 
 .detail-card-title {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     color: var(--clr-text-muted);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     margin: 0 0 var(--space-5);
 }
 
@@ -167,21 +167,13 @@
 }
 
 .detail-counter--fail {
-    border-color: rgba(252, 129, 129, 0.4);
-    background: linear-gradient(
-        135deg,
-        var(--clr-bg-elevated),
-        rgba(252, 129, 129, 0.06)
-    );
+    border-color: rgba(220, 38, 38, 0.28);
+    background: var(--clr-red-soft);
 }
 
 .detail-counter--ok {
-    border-color: rgba(72, 187, 120, 0.4);
-    background: linear-gradient(
-        135deg,
-        var(--clr-bg-elevated),
-        rgba(72, 187, 120, 0.06)
-    );
+    border-color: rgba(22, 163, 74, 0.28);
+    background: var(--clr-green-soft);
 }
 
 .detail-counter-value {

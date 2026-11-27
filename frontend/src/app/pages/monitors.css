@@ -15,7 +15,7 @@
     background: var(--clr-bg-surface);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-card), var(--shadow-inner);
+    box-shadow: var(--shadow-card);
     padding: var(--space-8);
     animation: fadeInUp var(--transition-slow) ease both;
 }
@@ -87,13 +87,12 @@
 
 .monitors-button--primary {
     border: none;
-    background: linear-gradient(135deg, var(--clr-accent), #805ad5);
+    background: var(--clr-accent);
     color: #ffffff;
 }
 
 .monitors-button--primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-glow);
+    background: var(--clr-accent-hover);
 }
 
 .monitors-button--primary:disabled {
@@ -102,12 +101,13 @@
 }
 
 .monitors-button--secondary {
-    background: transparent;
+    background: var(--clr-bg-surface);
     border: 1px solid var(--clr-border);
     color: var(--clr-text-primary);
 }
 
 .monitors-button--secondary:hover:not(:disabled) {
+    background: var(--clr-bg-elevated);
     border-color: var(--clr-border-glow);
 }
 
@@ -131,11 +131,11 @@
 }
 
 .monitors-table th {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     color: var(--clr-text-muted);
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--clr-border);
@@ -332,7 +332,7 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     border: 1px solid var(--clr-border);
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-input);
     color: var(--clr-text-primary);
     font-family: var(--font-sans);
     font-size: 0.95rem;
@@ -420,7 +420,7 @@
 /* ── Importer UI styles ─────────────────────────────────────────────────── */
 
 .importer-panel {
-    background: var(--clr-bg-subtle, #1a2234);
+    background: var(--clr-bg-elevated);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-lg);
     padding: var(--space-6);
@@ -428,11 +428,11 @@
 }
 
 .importer-dropzone {
-    border: 2px dashed var(--clr-border);
+    border: 2px dashed var(--clr-border-glow);
     border-radius: var(--radius-md);
     padding: var(--space-6);
     text-align: center;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--clr-bg-surface);
     margin-bottom: var(--space-4);
 }
 
@@ -459,7 +459,7 @@
 }
 
 .importer-preview-input {
-    background: var(--clr-bg-input, #0f172a);
+    background: var(--clr-bg-input);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-sm);
     color: var(--clr-text-primary);
@@ -469,19 +469,19 @@
 }
 
 .importer-badge-valid {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
+    background: var(--clr-green-soft);
+    color: var(--clr-green);
     padding: 2px 8px;
-    border-radius: var(--radius-full);
+    border-radius: 99px;
     font-size: 0.75rem;
     font-weight: 600;
 }
 
 .importer-badge-invalid {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+    background: var(--clr-red-soft);
+    color: var(--clr-red);
     padding: 2px 8px;
-    border-radius: var(--radius-full);
+    border-radius: 99px;
     font-size: 0.75rem;
     font-weight: 600;
 }

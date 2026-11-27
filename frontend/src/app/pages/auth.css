@@ -13,7 +13,7 @@
     background: var(--clr-bg-surface);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-card), var(--shadow-inner);
+    box-shadow: var(--shadow-card);
     animation: fadeInUp var(--transition-slow) ease both;
 }
 
@@ -49,7 +49,7 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     border: 1px solid var(--clr-border);
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-input);
     color: var(--clr-text-primary);
     font-family: var(--font-sans);
     font-size: 0.95rem;
@@ -73,21 +73,19 @@
     padding: var(--space-3) var(--space-4);
     border: none;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--clr-accent), #805ad5);
+    background: var(--clr-accent);
     color: #ffffff;
     font-family: var(--font-sans);
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition:
-        transform var(--transition-fast),
-        box-shadow var(--transition-normal),
+        background-color var(--transition-fast),
         opacity var(--transition-normal);
 }
 
 .auth-button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-glow);
+    background: var(--clr-accent-hover);
 }
 
 .auth-button:disabled {

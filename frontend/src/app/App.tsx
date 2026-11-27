@@ -15,42 +15,21 @@ import { IncidentsPage } from "./pages/IncidentsPage";
 import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { MembersPage } from "./pages/MembersPage";
 
-const STACK = [
+const FEATURES = [
     {
-        icon: "⚛️",
-        name: "React 18 + TypeScript",
-        role: "UI layer — strict mode, React Router, TanStack Query",
-        tag: "Frontend",
+        title: "Endpoint Monitoring",
+        description:
+            "Configure HTTP checks with custom intervals, timeouts, and expected status codes.",
     },
     {
-        icon: "⚡",
-        name: "FastAPI + Python",
-        role: "REST API — typed, async, Pydantic validation, OpenAPI docs",
-        tag: "Backend",
+        title: "Results & Incidents",
+        description:
+            "View check history, response times, and open or resolved incident timelines.",
     },
     {
-        icon: "🐘",
-        name: "PostgreSQL + pgvector",
-        role: "Primary data store — durable facts, future embeddings",
-        tag: "Database",
-    },
-    {
-        icon: "🟥",
-        name: "Redis",
-        role: "Queue broker, short-lived coordination and cache",
-        tag: "Queue",
-    },
-    {
-        icon: "🌿",
-        name: "Celery + Celery Beat",
-        role: "Background workers and scheduled health-check jobs",
-        tag: "Workers",
-    },
-    {
-        icon: "🐳",
-        name: "Docker Compose",
-        role: "Full local stack — one command to boot all services",
-        tag: "Infrastructure",
+        title: "Alerts & Team Roles",
+        description:
+            "Send failure notifications to team channels and manage member permissions.",
     },
 ];
 
@@ -85,65 +64,54 @@ function HomePage() {
                 {/* ── Hero ──────────────────────────────────────────────── */}
                 <section className="hero" aria-labelledby="hero-heading">
                     <div className="container">
-                        <div className="hero-eyebrow" role="note">
-                            <span
-                                className="hero-eyebrow-dot"
-                                aria-hidden="true"
-                            />
-                            Platform Foundation Active
-                        </div>
-
                         <h1 id="hero-heading">API Health Monitor</h1>
 
                         <p className="hero-sub">
-                            Distributed API Health &amp; Incident Monitoring
-                            Platform — monitor endpoints, detect failures in
-                            under two minutes, confirm incidents, and dispatch
-                            alerts with responsible rate limiting and AES-256
-                            encrypted configuration.
+                            Monitor API endpoints, review check history, track
+                            incidents, and send alerts to your team.
                         </p>
+
+                        <div className="hero-actions">
+                            <Link
+                                className="hero-btn hero-btn--primary"
+                                to="/signup"
+                            >
+                                Get started
+                            </Link>
+                            <Link
+                                className="hero-btn hero-btn--secondary"
+                                to="/login"
+                            >
+                                Sign in
+                            </Link>
+                        </div>
 
                         {/* Live backend status widget */}
                         <HealthStatus />
                     </div>
                 </section>
 
-                {/* ── Stack ──────────────────────────────────────────────── */}
-                <section
-                    className="section"
-                    aria-labelledby="stack-heading"
-                    id="stack"
-                >
+                {/* ── Overview ──────────────────────────────────────────── */}
+                <section className="section" aria-labelledby="overview-heading">
                     <div className="container">
                         <div className="section-header">
-                            <p className="section-label">Technology Stack</p>
-                            <h2 className="section-title" id="stack-heading">
-                                Built on a proven foundation
+                            <h2 className="section-title" id="overview-heading">
+                                What you can monitor
                             </h2>
                         </div>
 
-                        <div className="stack-grid">
-                            {STACK.map((item, i) => (
+                        <div className="capabilities-grid">
+                            {FEATURES.map((item) => (
                                 <article
-                                    key={item.name}
+                                    key={item.title}
                                     className="stack-card"
-                                    style={{ animationDelay: `${i * 60}ms` }}
                                 >
-                                    <span
-                                        className="stack-card-icon"
-                                        aria-hidden="true"
-                                    >
-                                        {item.icon}
-                                    </span>
-                                    <div className="stack-card-name">
-                                        {item.name}
-                                    </div>
+                                    <h3 className="stack-card-name">
+                                        {item.title}
+                                    </h3>
                                     <p className="stack-card-role">
-                                        {item.role}
+                                        {item.description}
                                     </p>
-                                    <span className="stack-card-tag">
-                                        {item.tag}
-                                    </span>
                                 </article>
                             ))}
                         </div>
@@ -155,23 +123,6 @@ function HomePage() {
             <footer className="site-footer">
                 <div className="container">
                     <p className="footer-text">© 2026 API Health Monitor</p>
-                    <div
-                        className="footer-stack"
-                        aria-label="Technology stack chips"
-                    >
-                        {[
-                            "React",
-                            "FastAPI",
-                            "PostgreSQL",
-                            "Redis",
-                            "Celery",
-                            "Docker",
-                        ].map((t) => (
-                            <span key={t} className="footer-chip">
-                                {t}
-                            </span>
-                        ))}
-                    </div>
                 </div>
             </footer>
         </div>
