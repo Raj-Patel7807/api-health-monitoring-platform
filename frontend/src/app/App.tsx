@@ -14,6 +14,7 @@ import { ChannelFormPage } from "./pages/ChannelFormPage";
 import { IncidentsPage } from "./pages/IncidentsPage";
 import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { MembersPage } from "./pages/MembersPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 const STACK = [
     {
@@ -224,6 +225,7 @@ export function App() {
                     element={<IncidentDetailPage />}
                 />
                 <Route path="/members" element={<MembersPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
             </Route>
         </Routes>
     );

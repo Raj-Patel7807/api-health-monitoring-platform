@@ -12,6 +12,7 @@ All routes are thin: validation lives in schemas, business logic stays here.
 
 import logging
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -27,6 +28,7 @@ from app.auth.schemas import (
     SignupRequest,
     TeamInResponse,
     TokenResponse,
+    UpdateMeRequest,
     UserResponse,
 )
 from app.auth.tokens import (
@@ -164,6 +166,25 @@ async def refresh(
     return _make_token_pair(user)
 
 
+async def _get_active_team(db: AsyncSession, user_id: uuid.UUID) -> TeamInResponse | None:
+    stmt = (
+        select(TeamMembership, Team)
+        .join(Team, TeamMembership.team_id == Team.id)
+        .where(
+            TeamMembership.user_id == user_id,
+            Team.deleted_at.is_(None),
+        )
+        .order_by(TeamMembership.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+    if row is not None:
+        membership, team = row
+        return TeamInResponse(id=team.id, name=team.name, role=membership.role)
+    return None
+
+
 @router.get("/me", response_model=UserResponse)
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -173,24 +194,72 @@ async def me(
 
     Active team = most recently joined team (Sprint 4 day-1 decision 1).
     """
-    stmt = (
-        select(TeamMembership, Team)
-        .join(Team, TeamMembership.team_id == Team.id)
-        .where(
-            TeamMembership.user_id == current_user.id,
-            Team.deleted_at.is_(None),
-        )
-        .order_by(TeamMembership.created_at.desc())
-        .limit(1)
+    team_info = await _get_active_team(db, current_user.id)
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        team=team_info,
     )
-    result = await db.execute(stmt)
-    row = result.first()
 
-    team_info: TeamInResponse | None = None
-    if row is not None:
-        membership, team = row
-        team_info = TeamInResponse(id=team.id, name=team.name, role=membership.role)
 
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    body: UpdateMeRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> UserResponse:
+    """Update profile details (name, email) or password for the authenticated user.
+
+    Sensitive changes (password change) require current_password verification.
+    """
+    if body.new_password is not None:
+        if not body.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is required to set a new password.",
+            )
+        if not verify_password(body.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect current password.",
+            )
+        current_user.password_hash = hash_password(body.new_password)
+    elif body.current_password is not None:
+        if not verify_password(body.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect current password.",
+            )
+
+    if body.email is not None and body.email.lower() != current_user.email.lower():
+        existing = await db.execute(
+            select(User).where(User.email == body.email, User.id != current_user.id)
+        )
+        if existing.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email address already exists.",
+            )
+        current_user.email = body.email
+
+    if body.full_name is not None:
+        current_user.full_name = body.full_name
+
+    current_user.updated_at = datetime.now(UTC)
+
+    try:
+        await db.flush()
+    except IntegrityError as err:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email address already exists.",
+        ) from err
+
+    team_info = await _get_active_team(db, current_user.id)
     return UserResponse(
         id=current_user.id,
         email=current_user.email,

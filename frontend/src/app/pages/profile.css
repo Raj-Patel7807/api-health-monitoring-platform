@@ -1,0 +1,155 @@
+/* ─── Profile Page Styles (US-01, US-19, Issue #77) ────────────────────── */
+
+.profile-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+}
+
+.profile-header {
+    margin-bottom: var(--space-6);
+}
+
+.profile-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--clr-text-primary);
+    margin: 0 0 var(--space-1) 0;
+}
+
+.profile-subtitle {
+    color: var(--clr-text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* ── Account Summary Card ─────────────────────────────────────────────────── */
+.profile-card {
+    background: var(--clr-bg-card);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.profile-card h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    margin: 0 0 var(--space-4) 0;
+}
+
+.profile-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+}
+
+.profile-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.profile-summary-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-secondary);
+}
+
+.profile-summary-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--clr-text-primary);
+    word-break: break-all;
+}
+
+.profile-role-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text-primary);
+    width: fit-content;
+}
+
+/* ── Form Layout ──────────────────────────────────────────────────────────── */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.profile-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.profile-form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--clr-text-secondary);
+}
+
+.profile-input {
+    width: 100%;
+    background: var(--clr-bg-elevated);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    color: var(--clr-text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    padding: var(--space-2) var(--space-3);
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+.profile-input:focus {
+    outline: none;
+    border-color: var(--clr-accent);
+    box-shadow: 0 0 0 2px var(--clr-accent-soft);
+}
+
+.profile-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: var(--clr-accent);
+    color: var(--clr-accent-contrast, #ffffff);
+    cursor: pointer;
+    transition:
+        opacity var(--transition-fast),
+        background-color var(--transition-fast);
+    align-self: flex-start;
+}
+
+.profile-button:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.profile-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.profile-error {
+    color: var(--clr-danger, #ef4444);
+    font-size: 0.875rem;
+    margin: 0;
+}

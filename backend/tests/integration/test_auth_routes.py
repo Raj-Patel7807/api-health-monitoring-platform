@@ -222,3 +222,130 @@ async def test_two_signups_without_team_name_create_distinct_teams(client):
         )
         names.append(profile.json()["team"]["name"])
     assert len(set(names)) == 2
+
+
+# ---------------------------------------------------------------------------
+# PATCH /me tests (US-01, US-19, Issue #77)
+# ---------------------------------------------------------------------------
+
+
+async def test_patch_me_updates_name_and_email(client: AsyncClient) -> None:
+    signup_payload = {
+        **_SIGNUP_PAYLOAD,
+        "email": "patch-user@example.com",
+        "full_name": "Original Name",
+    }
+    signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
+    token = signup_resp.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"full_name": "Updated Name", "email": "patch-new@example.com"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["full_name"] == "Updated Name"
+    assert data["email"] == "patch-new@example.com"
+    assert data["team"]["name"] == "Alice Team"
+
+
+async def test_patch_me_duplicate_email_returns_409(client: AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/signup", json={**_SIGNUP_PAYLOAD, "email": "user-a@example.com"}
+    )
+    res2 = await client.post(
+        "/api/v1/auth/signup", json={**_SIGNUP_PAYLOAD, "email": "user-b@example.com"}
+    )
+    token2 = res2.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token2}"},
+        json={"email": "user-a@example.com"},
+    )
+    assert resp.status_code == 409
+
+
+async def test_patch_me_change_password_success_and_login(client: AsyncClient) -> None:
+    signup_payload = {
+        **_SIGNUP_PAYLOAD,
+        "email": "pwd-user@example.com",
+        "password": "oldpassword123",
+    }
+    signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
+    token = signup_resp.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "oldpassword123", "new_password": "newpassword456"},
+    )
+    assert resp.status_code == 200
+
+    # Old password should now fail
+    fail_login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "pwd-user@example.com", "password": "oldpassword123"},
+    )
+    assert fail_login.status_code == 401
+
+    # New password should succeed
+    succ_login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "pwd-user@example.com", "password": "newpassword456"},
+    )
+    assert succ_login.status_code == 200
+
+
+async def test_patch_me_change_password_wrong_current_password_returns_400(
+    client: AsyncClient,
+) -> None:
+    signup_payload = {**_SIGNUP_PAYLOAD, "email": "pwd-wrong@example.com", "password": "correct123"}
+    signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
+    token = signup_resp.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "wrongpassword", "new_password": "newpassword456"},
+    )
+    assert resp.status_code == 400
+    assert "Incorrect current password." in resp.json()["detail"]
+
+
+async def test_patch_me_change_password_missing_current_password_returns_400(
+    client: AsyncClient,
+) -> None:
+    signup_payload = {
+        **_SIGNUP_PAYLOAD,
+        "email": "pwd-missing@example.com",
+        "password": "correct123",
+    }
+    signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
+    token = signup_resp.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"new_password": "newpassword456"},
+    )
+    assert resp.status_code == 400
+
+
+async def test_patch_me_short_new_password_returns_422(client: AsyncClient) -> None:
+    signup_payload = {**_SIGNUP_PAYLOAD, "email": "pwd-short@example.com", "password": "correct123"}
+    signup_resp = await client.post("/api/v1/auth/signup", json=signup_payload)
+    token = signup_resp.json()["access_token"]
+
+    resp = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "correct123", "new_password": "short"},
+    )
+    assert resp.status_code == 422
+
+
+async def test_patch_me_unauthenticated_returns_401(client: AsyncClient) -> None:
+    resp = await client.patch("/api/v1/auth/me", json={"full_name": "Ghost"})
+    assert resp.status_code in (401, 403)
