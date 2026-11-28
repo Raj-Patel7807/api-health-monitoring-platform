@@ -118,15 +118,30 @@ wrong password), `403` "Account is disabled.", `422`.
 ```
 Errors: `401` invalid/expired token, wrong token type, or user not found/inactive.
 
-### `GET /auth/me` 📝
+### `GET /auth/me` ✅
 Returns the current user and their role in the active team. Any authenticated user.
 ```json
 { "id": "uuid", "email": "rahul@gmail.com", "full_name": "Rahul Sharma",
   "is_active": true, "created_at": "2026-10-01T10:00:00Z",
   "team": { "id": "uuid", "name": "FinTech Engineering", "role": "admin" } }
 ```
-`team.role` is one of `admin`, `operator`, `read_only`. Until this ships, the
-response has no `team` field, and the frontend uses a stub role.
+
+### `PATCH /auth/me` ✅
+Updates profile details (full name, email) or changes password for the authenticated user.
+Any authenticated user. Sensitive changes (password change) require `current_password`.
+```json
+// Request (all fields optional)
+{ "full_name": "Rahul Sharma",
+  "email": "rahul.updated@gmail.com",
+  "current_password": "oldpassword123",
+  "new_password": "newpassword123" }
+
+// 200 Response: UserResponse with active team info
+{ "id": "uuid", "email": "rahul.updated@gmail.com", "full_name": "Rahul Sharma",
+  "is_active": true, "created_at": "2026-10-01T10:00:00Z",
+  "team": { "id": "uuid", "name": "FinTech Engineering", "role": "admin" } }
+```
+Errors: `400` incorrect current password or missing current password when changing password, `409` duplicate email, `422` validation error.
 
 ---
 
@@ -498,6 +513,7 @@ that belongs to another team returns `404` regardless of role.
 | View AI incident analysis | ✅ | ✅ | ✅ |
 | Re-trigger AI incident analysis | ✅ | ✅ | ❌ |
 | `GET /auth/me` | ✅ | ✅ | ✅ |
+| `PATCH /auth/me` | ✅ | ✅ | ✅ |
 
 Public routes (no token): signup, login, refresh, the health check, and the API docs.
 
