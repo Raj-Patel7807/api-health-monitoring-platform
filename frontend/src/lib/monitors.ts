@@ -353,3 +353,27 @@ export function changedFields(
 
     return changes;
 }
+
+export interface ExtractedEndpoint {
+    name: string;
+    method: HttpMethod;
+    url: string;
+    expected_status_code: number;
+    timeout_seconds: number;
+    check_interval_seconds: number;
+    failure_threshold: number;
+    recovery_threshold: number;
+    description?: string | null;
+}
+
+export interface MarkdownExtractResponse {
+    endpoints: ExtractedEndpoint[];
+    total_found: number;
+    warnings: string[];
+    used_llm: boolean;
+}
+
+export interface MonitorBatchCreateResponse {
+    created: Monitor[];
+    count: number;
+}

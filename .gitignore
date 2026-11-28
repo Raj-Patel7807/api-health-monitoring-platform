@@ -27,6 +27,7 @@ test-results/
 # Logs and local data
 *.log
 *.sqlite3
+celerybeat-schedule*
 
 # Editors and operating systems
 .idea/

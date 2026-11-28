@@ -2,7 +2,9 @@ import { authenticatedFetch } from "./authenticatedFetch";
 import type {
     CheckResultListResponse,
     CheckResultsParams,
+    MarkdownExtractResponse,
     Monitor,
+    MonitorBatchCreateResponse,
     MonitorField,
     MonitorListResponse,
     MonitorPayload,
@@ -233,4 +235,26 @@ export async function getMonitorResults(
         `/monitors/${encodeURIComponent(monitorId)}/results?${qs.toString()}`,
         { method: "GET" },
     );
+}
+
+export async function extractMonitorsFromMarkdown(
+    markdownContent: string,
+    baseUrl?: string,
+): Promise<MarkdownExtractResponse> {
+    return request<MarkdownExtractResponse>("/monitors/ai-extract", {
+        method: "POST",
+        body: JSON.stringify({
+            markdown_content: markdownContent,
+            base_url: baseUrl?.trim() ? baseUrl.trim() : null,
+        }),
+    });
+}
+
+export async function createMonitorsBatch(
+    monitors: MonitorPayload[],
+): Promise<MonitorBatchCreateResponse> {
+    return request<MonitorBatchCreateResponse>("/monitors/batch", {
+        method: "POST",
+        body: JSON.stringify({ monitors }),
+    });
 }

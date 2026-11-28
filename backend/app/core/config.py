@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # Webhook configuration
     webhook_secret: str = ""
     llm_enabled: bool = False
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash-lite"
     llm_provider: str = "rules"
     llm_api_key: str = ""
     llm_model: str = "gemini-1.5-flash"

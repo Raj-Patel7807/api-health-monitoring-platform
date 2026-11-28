@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import TeamMembership, TeamRole
 from app.db.session import get_db
+from app.integrations.llm.extractor import extract_endpoints_from_markdown
 from app.modules.dashboard.service import get_monitor_health
 from app.modules.monitors import service
 from app.modules.monitors.dependencies import (
@@ -19,6 +20,11 @@ from app.modules.monitors.dependencies import (
     require_monitor_write,
 )
 from app.modules.monitors.schemas import (
+    ExtractedEndpointItem,
+    MarkdownExtractRequest,
+    MarkdownExtractResponse,
+    MonitorBatchCreateRequest,
+    MonitorBatchCreateResponse,
     MonitorCreateRequest,
     MonitorDetailResponse,
     MonitorListResponse,
@@ -186,3 +192,61 @@ async def delete_monitor(
             detail="Monitor not found.",
         )
     await service.soft_delete_monitor(db, monitor)
+
+
+@router.post(
+    "/ai-extract",
+    response_model=MarkdownExtractResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def extract_monitors_from_markdown(
+    body: MarkdownExtractRequest,
+    context: Annotated[TeamContext, Depends(require_monitor_write)],
+) -> MarkdownExtractResponse:
+    """Use Gemini Flash Lite (or heuristic fallback) to parse markdown endpoints."""
+    result = await extract_endpoints_from_markdown(
+        markdown_content=body.markdown_content,
+        base_url=body.base_url,
+    )
+    items = [
+        ExtractedEndpointItem(
+            name=ep.name,
+            method=ep.method,
+            url=ep.url,
+            expected_status_code=ep.expected_status_code,
+            timeout_seconds=ep.timeout_seconds,
+            check_interval_seconds=ep.check_interval_seconds,
+            failure_threshold=ep.failure_threshold,
+            recovery_threshold=ep.recovery_threshold,
+            description=ep.description,
+        )
+        for ep in result.endpoints
+    ]
+    return MarkdownExtractResponse(
+        endpoints=items,
+        total_found=result.total_found,
+        warnings=result.warnings,
+        used_llm=result.used_llm,
+    )
+
+
+@router.post(
+    "/batch",
+    response_model=MonitorBatchCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_monitors_batch(
+    body: MonitorBatchCreateRequest,
+    context: Annotated[TeamContext, Depends(require_monitor_write)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MonitorBatchCreateResponse:
+    """Batch register multiple API endpoint monitors under the active team."""
+    created = await service.create_monitors_batch(
+        db=db,
+        team_id=context.team.id,
+        monitors_data=body.monitors,
+    )
+    return MonitorBatchCreateResponse(
+        created=[MonitorDetailResponse.model_validate(m) for m in created],
+        count=len(created),
+    )
