@@ -68,7 +68,7 @@
 .members-input,
 .members-select {
     width: 100%;
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-input);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-md);
     color: var(--clr-text-primary);
@@ -116,17 +116,17 @@
 }
 
 .members-button--primary:not(:disabled):hover {
-    background: var(--clr-accent-hover, #2563eb);
+    background: var(--clr-accent-hover);
 }
 
 .members-button--secondary {
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-surface);
     border-color: var(--clr-border);
     color: var(--clr-text-primary);
 }
 
 .members-button--secondary:not(:disabled):hover {
-    background: var(--clr-bg-muted);
+    background: var(--clr-bg-elevated);
 }
 
 /* ── Members List Card ───────────────────────────────────────────────────── */
@@ -171,7 +171,7 @@
 }
 
 .members-table tbody tr:hover {
-    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.02));
+    background: var(--clr-bg-elevated);
 }
 
 .members-email-cell {
@@ -194,25 +194,25 @@
 }
 
 .members-role-badge--admin {
-    background: rgba(147, 51, 234, 0.15);
-    color: #c084fc;
-    border: 1px solid rgba(147, 51, 234, 0.3);
+    background: rgba(126, 34, 206, 0.1);
+    color: #7e22ce;
+    border: 1px solid rgba(126, 34, 206, 0.22);
 }
 
 .members-role-badge--operator {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: var(--clr-accent-soft);
+    color: var(--clr-accent);
+    border: 1px solid rgba(37, 99, 235, 0.22);
 }
 
 .members-role-badge--read_only {
-    background: rgba(156, 163, 175, 0.15);
-    color: #9ca3af;
-    border: 1px solid rgba(156, 163, 175, 0.3);
+    background: var(--clr-bg-elevated);
+    color: var(--clr-text-secondary);
+    border: 1px solid var(--clr-border);
 }
 
 .members-role-select {
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-input);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-sm);
     color: var(--clr-text-primary);
@@ -245,9 +245,9 @@
 }
 
 .members-error-banner {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
+    background: var(--clr-red-soft);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    color: var(--clr-red);
     border-radius: var(--radius-md);
     padding: var(--space-3) var(--space-4);
     margin-bottom: var(--space-4);

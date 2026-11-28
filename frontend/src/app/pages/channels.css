@@ -29,7 +29,7 @@
     font-size: 0.78rem;
     font-family: var(--font-mono, "Fira Code", "Cascadia Code", monospace);
     color: var(--clr-text-secondary);
-    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    background: var(--clr-bg-elevated);
     padding: 1px 4px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--clr-border);
@@ -69,7 +69,7 @@
 }
 
 .channel-toggle--off {
-    background: var(--clr-border);
+    background: #cbd5e1;
 }
 
 .channel-toggle-knob {
@@ -93,7 +93,7 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-3);
-    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    background: var(--clr-bg-elevated);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-md);
     font-weight: 600;
@@ -117,7 +117,7 @@
 .channel-secret-hint code {
     font-family: var(--font-mono, "Fira Code", monospace);
     font-size: 0.8rem;
-    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    background: var(--clr-bg-elevated);
     padding: 1px 4px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--clr-border);
@@ -138,7 +138,7 @@
 }
 
 .form-input {
-    background: var(--clr-bg-muted, rgba(255, 255, 255, 0.04));
+    background: var(--clr-bg-input);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-md);
     color: var(--clr-text-primary);
@@ -165,7 +165,7 @@
 
 .form-field-error {
     font-size: 0.82rem;
-    color: var(--clr-error, #f87171);
+    color: var(--clr-red);
     margin: 0;
 }
 
@@ -176,10 +176,10 @@
 }
 
 .form-error-banner {
-    background: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.3);
+    background: var(--clr-red-soft);
+    border: 1px solid rgba(220, 38, 38, 0.28);
     border-radius: var(--radius-md);
-    color: var(--clr-error, #f87171);
+    color: var(--clr-red);
     font-size: 0.9rem;
     padding: var(--space-3) var(--space-4);
     margin-bottom: var(--space-5);

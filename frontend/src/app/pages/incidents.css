@@ -25,7 +25,7 @@
 }
 
 .incidents-select {
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-input);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-md);
     color: var(--clr-text-primary);
@@ -86,8 +86,8 @@
     align-items: center;
     gap: var(--space-2);
     font-size: 0.75rem;
-    color: var(--clr-text-muted);
-    background: var(--clr-bg-elevated);
+    color: var(--clr-text-secondary);
+    background: var(--clr-bg-surface);
     padding: var(--space-1) var(--space-3);
     border-radius: 9999px;
     border: 1px solid var(--clr-border);
@@ -98,19 +98,6 @@
     height: 6px;
     border-radius: 50%;
     background-color: var(--clr-accent);
-    animation: pulseGlow 2s infinite ease-in-out;
-}
-
-@keyframes pulseGlow {
-    0%,
-    100% {
-        opacity: 0.4;
-        transform: scale(0.9);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
 }
 
 /* ── Deliveries Panel ───────────────────────────────────────────────────────── */
@@ -142,7 +129,7 @@
 }
 
 .delivery-card {
-    background: var(--clr-bg-elevated);
+    background: var(--clr-bg-surface);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-lg);
     padding: var(--space-4);
@@ -153,7 +140,7 @@
 }
 
 .delivery-card:hover {
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--clr-border-glow);
 }
 
 .delivery-card-top {
@@ -202,8 +189,8 @@
     gap: 0.25rem;
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.2;
     text-transform: uppercase;
@@ -212,26 +199,26 @@
 .delivery-badge--sent {
     background: var(--clr-green-soft);
     color: var(--clr-green);
-    border: 1px solid rgba(72, 187, 120, 0.25);
+    border: 1px solid rgba(22, 163, 74, 0.25);
 }
 
 .delivery-badge--pending {
     background: var(--clr-yellow-soft);
     color: var(--clr-yellow);
-    border: 1px solid rgba(246, 224, 94, 0.25);
+    border: 1px solid rgba(217, 119, 6, 0.25);
 }
 
 .delivery-badge--failed {
     background: var(--clr-red-soft);
     color: var(--clr-red);
-    border: 1px solid rgba(252, 129, 129, 0.25);
+    border: 1px solid rgba(220, 38, 38, 0.25);
 }
 
 /* ── Delivery Error Message Box ─────────────────────────────────────────────── */
 
 .delivery-error-box {
-    background: rgba(252, 129, 129, 0.08);
-    border: 1px solid rgba(252, 129, 129, 0.2);
+    background: var(--clr-red-soft);
+    border: 1px solid rgba(220, 38, 38, 0.25);
     border-radius: var(--radius-md);
     padding: var(--space-3);
     font-size: 0.8125rem;
@@ -261,10 +248,12 @@
 .app-nav {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-1);
     background: var(--clr-bg-surface);
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     padding: var(--space-1);
     margin-bottom: var(--space-6);
 }
@@ -295,6 +284,11 @@
     background: transparent;
     font-family: inherit;
     cursor: pointer;
+}
+
+.app-nav-logout:hover {
+    color: var(--clr-red);
+    background: var(--clr-red-soft);
 }
 
 .app-nav-link--active {

@@ -23,7 +23,7 @@
 }
 
 .confirm-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(4px);
     animation: backdropIn 200ms ease both;
 }
@@ -40,11 +40,9 @@
 /* ── Panel ───────────────────────────────────────────────────────────────── */
 .confirm-dialog-panel {
     background: var(--clr-bg-surface);
-    border: 1px solid rgba(252, 129, 129, 0.25);
+    border: 1px solid rgba(220, 38, 38, 0.25);
     border-radius: var(--radius-xl);
-    box-shadow:
-        var(--shadow-card),
-        0 0 40px rgba(252, 129, 129, 0.08);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
     padding: var(--space-8);
     width: min(26rem, calc(100vw - var(--space-8)));
     display: flex;
@@ -72,7 +70,7 @@
     height: 3rem;
     border-radius: 50%;
     background: var(--clr-red-soft);
-    border: 1px solid rgba(252, 129, 129, 0.25);
+    border: 1px solid rgba(220, 38, 38, 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,13 +103,12 @@
 /* Danger button variant (also used from MonitorsPage / detail page) */
 .monitors-button--danger {
     border: none;
-    background: linear-gradient(135deg, #e53e3e, #c53030);
+    background: var(--clr-red);
     color: #ffffff;
 }
 
 .monitors-button--danger:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 0 20px rgba(229, 62, 62, 0.3);
+    background: #b91c1c;
 }
 
 .monitors-button--danger:disabled {

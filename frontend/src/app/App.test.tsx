@@ -39,23 +39,22 @@ test("shows login and signup links in the header", () => {
     );
 });
 
-test("renders the stack section heading", () => {
+test("renders overview features without exposing technology stack details", () => {
     renderApp();
     expect(
-        screen.getByRole("heading", { name: /built on a proven foundation/i }),
+        screen.getByRole("heading", {
+            name: /what you can monitor/i,
+        }),
     ).toBeInTheDocument();
-});
-
-test("renders all six stack cards", () => {
-    renderApp();
-    // Full card names are unique — safe to use getByText.
-    expect(screen.getByText("React 18 + TypeScript")).toBeInTheDocument();
-    expect(screen.getByText("FastAPI + Python")).toBeInTheDocument();
-    expect(screen.getByText("PostgreSQL + pgvector")).toBeInTheDocument();
-    expect(screen.getByText("Celery + Celery Beat")).toBeInTheDocument();
-    expect(screen.getByText("Docker Compose")).toBeInTheDocument();
-    // "Redis" also appears in the footer chip, so assert at least one match.
-    expect(screen.getAllByText("Redis").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Endpoint Monitoring")).toBeInTheDocument();
+    expect(screen.getByText("Results & Incidents")).toBeInTheDocument();
+    expect(screen.getByText("Alerts & Team Roles")).toBeInTheDocument();
+    expect(screen.queryByText(/technology stack/i)).not.toBeInTheDocument();
+    expect(
+        screen.queryByText(/platform foundation active/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("React 18 + TypeScript")).not.toBeInTheDocument();
+    expect(screen.queryByText("FastAPI + Python")).not.toBeInTheDocument();
 });
 
 test("renders the live backend status widget", () => {
