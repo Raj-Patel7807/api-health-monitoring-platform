@@ -57,6 +57,16 @@ export function AppNav() {
                     <span>Members</span>
                 </NavLink>
             )}
+            <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                    `app-nav-link${isActive ? " app-nav-link--active" : ""}`
+                }
+                data-testid="nav-profile-link"
+            >
+                <span aria-hidden="true">👤</span>
+                <span>Profile</span>
+            </NavLink>
             <button
                 type="button"
                 className="app-nav-link app-nav-logout"

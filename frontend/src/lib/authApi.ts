@@ -24,10 +24,40 @@ export type UserProfile = {
     team?: UserTeam | null;
 };
 
+export type UpdateMePayload = {
+    full_name?: string;
+    email?: string;
+    current_password?: string;
+    new_password?: string;
+};
+
 type TokenResponse = {
     access_token: string;
     refresh_token?: string;
 };
+
+async function extractErrorMessage(
+    response: Response,
+    defaultMsg: string,
+): Promise<string> {
+    try {
+        const data = (await response.json()) as {
+            detail?: string | Array<{ msg?: string }>;
+        };
+        if (typeof data.detail === "string") {
+            return data.detail;
+        }
+        if (Array.isArray(data.detail) && data.detail.length > 0) {
+            const msgs = data.detail.map((d) => d.msg).filter(Boolean);
+            if (msgs.length > 0) {
+                return msgs.join(", ");
+            }
+        }
+    } catch {
+        // Fall back to defaultMsg if parsing fails
+    }
+    return defaultMsg;
+}
 
 async function postJson(path: string, body: unknown): Promise<Response> {
     return fetch(`${apiBaseUrl}${path}`, {
@@ -50,7 +80,11 @@ export async function signup(
         team_name: teamName,
     });
     if (!response.ok) {
-        throw new Error("Signup failed. Please check your details.");
+        const message = await extractErrorMessage(
+            response,
+            "Signup failed. Please check your details.",
+        );
+        throw new Error(message);
     }
     // API.md: 201 returns { user, team, access_token, refresh_token }
     try {
@@ -85,6 +119,24 @@ export async function getMe(): Promise<UserProfile> {
                 ? "Session expired. Please log in again."
                 : "Failed to fetch user profile.",
         );
+    }
+    return (await response.json()) as UserProfile;
+}
+
+export async function updateMe(payload: UpdateMePayload): Promise<UserProfile> {
+    const response = await authenticatedFetch(`${apiBaseUrl}${ME_PATH}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const errorMsg = await extractErrorMessage(
+            response,
+            response.status === 401
+                ? "Session expired. Please log in again."
+                : "Failed to update profile.",
+        );
+        throw new Error(errorMsg);
     }
     return (await response.json()) as UserProfile;
 }
