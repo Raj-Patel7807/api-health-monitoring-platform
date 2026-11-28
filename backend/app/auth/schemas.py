@@ -36,6 +36,20 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class UpdateMeRequest(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=150)
+    email: EmailStr | None = None
+    current_password: str | None = Field(default=None, min_length=1, max_length=128)
+    new_password: str | None = Field(default=None, min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_not_blank(cls, v: str | None) -> str | None:
+        if v is not None and len(v.strip()) == 0:
+            raise ValueError("password must not be blank")
+        return v
+
+
 # ---------------------------------------------------------------------------
 # Responses
 # ---------------------------------------------------------------------------
